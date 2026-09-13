@@ -3,3 +3,4 @@
 .env.*
 .credentials/
 node_modules/
+_site/

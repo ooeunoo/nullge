@@ -17,8 +17,9 @@ http://localhost:8180/ 에 접속합니다.
 - `index.html`: 회사 소개, 서비스, 연락처
 - `styles.css`: 반응형 스타일
 - `assets/`: 로고와 자체 호스팅 폰트
-- GitHub Pages: `main` 브랜치의 `/ (root)`를 자동 배포합니다.
-- 커스텀 도메인: `www.nullge.com` (`CNAME` 파일)
+- GitHub Pages: `main`에 푸시하면 `.github/workflows/pages.yml`이 자동 배포합니다.
+- 배포 파일은 HTML·CSS·이미지·폰트와 검색엔진 설정만 포함합니다.
+- 커스텀 도메인: GitHub 저장소 Settings → Pages에서 `www.nullge.com`으로 설정합니다.
 - GoDaddy DNS: `www` CNAME → `ooeunoo.github.io`
 - `nullge.com`은 GoDaddy의 HTTPS 전달로 `https://www.nullge.com/`에 연결합니다.
 
