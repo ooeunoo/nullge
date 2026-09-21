@@ -122,6 +122,8 @@ svg {
 .sectionHeading { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-md); }
 .sectionHeading h2 { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
 .product { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-raised); }
+.product + .product { margin-top: var(--space-md); }
+.productClipit { --product-bg: #ff7959; --product-ink: #242326; --product-accent: #ff7959; }
 .page .product:hover { text-decoration: none; border-color: var(--border-strong); }
 .productVisual { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-md); min-height: 390px; padding: var(--space-lg); background: var(--product-bg); color: var(--product-ink); }
 .productIcon { border-radius: var(--radius-lg); }
@@ -130,7 +132,7 @@ svg {
 .productCopy { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-md); padding: var(--space-lg); }
 .productCopy h3 { font-size: clamp(30px, 3.5vw, 42px); line-height: 1.3; letter-spacing: -1.5px; }
 .productCopy > p:not(.eyebrow) { font-size: 14px; line-height: 1.9; color: var(--text-secondary); word-break: keep-all; }
-.productCopy .textLink { margin-top: auto; color: var(--accent); }
+.productCopy .textLink { margin-top: auto; color: var(--product-accent, var(--accent)); }
 .contact { display: flex; justify-content: space-between; align-items: center; gap: var(--space-lg); padding-block: var(--space-hero); }
 .contact h2 { margin-top: var(--space-sm); margin-bottom: var(--space-sm); font-size: clamp(28px, 3.5vw, 40px); letter-spacing: -1px; }
 .contact p:not(.eyebrow) { font-size: 14px; color: var(--text-secondary); }
@@ -138,6 +140,7 @@ svg {
 .email span { color: var(--accent); }
 .footer { display: flex; justify-content: space-between; gap: var(--space-md); padding-block: var(--space-lg); border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 11px; line-height: 1.9; }
 .footer strong { color: var(--text); font-size: 13px; }
+.supportLinks { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); }
 @media (max-width: 700px) {
   .hero h1 { letter-spacing: -1.7px; }
   .product { grid-template-columns: 1fr; }
