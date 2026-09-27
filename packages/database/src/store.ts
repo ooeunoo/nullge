@@ -77,6 +77,23 @@ export class Store {
       return normalized(post);
     });
   }
+  /** Removes a post that has never been sent to a channel. Events keep the title, generation jobs keep their record. */
+  async remove(workspaceId: string, slug: string, id: string, actorId: string, revision: number): Promise<{ id: string }> {
+    return this.db.transaction(async manager => {
+      const project = await this.project(workspaceId,slug,manager,true);
+      const [current] = await manager.query('SELECT * FROM posts WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3 FOR UPDATE', [workspaceId,project.id,id]);
+      if (!current || current.revision !== revision) throw new StoreError(409, '콘텐츠가 변경되었거나 이미 삭제되었습니다. 새로고침해 주세요.');
+      if (current.publishStatus) throw new StoreError(409, '게시 요청이 기록된 콘텐츠는 삭제할 수 없습니다.');
+      await manager.query('UPDATE events SET "postId"=NULL WHERE "postId"=$1', [id]);
+      await manager.query('UPDATE generation_jobs SET "postId"=NULL WHERE "postId"=$1', [id]);
+      await manager.query('DELETE FROM posts WHERE id=$1', [id]);
+      if (current.assetId) {
+        await manager.query(`DELETE FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3 AND NOT EXISTS (SELECT 1 FROM posts WHERE "assetId"=$1)`, [current.assetId,workspaceId,project.id]);
+      }
+      await this.event(manager,workspaceId,project.id,actorId,'post_deleted',current.title);
+      return { id };
+    });
+  }
   async updateProfile(workspaceId: string, slug: string, actorId: string, input: ProfileInput): Promise<Project> {
     return this.db.transaction(async manager => {
       const project = await this.project(workspaceId,slug,manager,true);

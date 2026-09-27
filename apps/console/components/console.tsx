@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowUpRight, Check, ChevronRight, CircleHelp, Copy, FileText, LayoutGrid, LogOut, Plus, RefreshCw, Search, Settings, ShieldCheck, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Check, ChevronRight, CircleHelp, Copy, FileText, LayoutGrid, LogOut, Plus, RefreshCw, Search, Settings, ShieldCheck, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { CHANNEL_LABELS, STATUS_LABELS, MAX_POST_IMAGE_BYTES, type AuthOptions, type Dashboard, type Post, type PostInput, type Project, type ProfileInput } from '@nullge/contracts';
 import { productBrands } from './product-brands';
 import { SharedSettings,ProductChannels,AutoCreator,GenerationHistory,GeneratedAsset,PublishPanel } from './marketing';
@@ -102,7 +102,7 @@ function Overview({data}:{data:Dashboard}) {
     <div className="page-heading"><div><p className="eyebrow">YOUR WORK, IN ONE PLACE</p><h1>오늘의 작업 공간</h1><p className="page-description">제품마다 다른 이야기, 한곳에서 이어가세요.</p></div><span className="date-label">{new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',weekday:'long',timeZone:'Asia/Seoul'}).format(new Date())}</span></div>
     <section className="summary-row" aria-label="콘텐츠 현황">{[['작성 중',data.posts.filter(p=>p.status==='draft').length,'초안을 이어서 작성하세요'],['검토 대기',review.length,'문구와 제품 정보를 확인하세요'],['검토 완료',data.posts.filter(p=>p.status==='approved').length,'채널 연결 후 발행을 준비하세요']].map(([label,value,description])=><div className="summary" key={label}><span>{label}</span><strong>{value.toString().padStart(2,'0')}</strong><p>{description}</p></div>)}</section>
     <section className="section"><div className="section-title"><h2>우리의 제품</h2><span className="muted">{data.projects.length}개 제품</span></div><div className="project-grid">{data.projects.map(p=><a className="project-card" href={projectPath(p)} key={p.id}><div className="project-card-top"><Mark project={p} large/><ArrowUpRight size={19}/></div><h3>{p.name}</h3><p>{p.description}</p><div className="project-card-bottom"><span>콘텐츠 {data.posts.filter(x=>x.projectId===p.id).length}개</span><span className={p.profileReviewedAt?'ready-label':'muted'}>{p.profileReviewedAt?'프로필 확인됨':'프로필 확인 필요'}</span></div></a>)}</div></section>
-    <div className="overview-bottom"><section className="panel"><div className="section-title"><h2>검토할 콘텐츠</h2><span className="count">{review.length}</span></div>{review.length?<div className="review-list">{review.slice(0,5).map(post=>{const p=data.projects.find(x=>x.id===post.projectId)!;return <a key={post.id} href={`${projectPath(p)}/${post.id}`}><Mark project={p}/><div><strong>{post.title}</strong><span>{p.name} · {CHANNEL_LABELS[post.channel]}</span></div><ChevronRight size={16}/></a>;})}</div>:<Empty title="검토할 콘텐츠가 없어요."><p>제품을 선택해 첫 초안을 작성해 보세요.</p></Empty>}</section><section className="panel"><div className="section-title"><h2>최근 작업</h2></div>{data.activities.length?<ol className="activity-list">{data.activities.slice(0,6).map(a=><li key={a.id}><span className="activity-line"/><div><strong>{a.title}</strong><p>{({post_created:'초안 작성',post_updated:'콘텐츠 수정',post_review:'검토 요청',post_approve:'문구 검토 완료',post_reopen:'초안으로 되돌림',profile_imported:'저장소 기반 기본 설정',profile_corrected:'제품 저장소 정정',profile_updated:'제품 정보 변경',profile_reviewed:'제품 정보 확인'} as Record<string,string>)[a.action] || a.action} · {date(a.createdAt)}</p></div></li>)}</ol>:<p className="empty-activity">콘텐츠와 제품 정보를 저장하면 여기에 기록돼요.</p>}</section></div>
+    <div className="overview-bottom"><section className="panel"><div className="section-title"><h2>검토할 콘텐츠</h2><span className="count">{review.length}</span></div>{review.length?<div className="review-list">{review.slice(0,5).map(post=>{const p=data.projects.find(x=>x.id===post.projectId)!;return <a key={post.id} href={`${projectPath(p)}/${post.id}`}><Mark project={p}/><div><strong>{post.title}</strong><span>{p.name} · {CHANNEL_LABELS[post.channel]}</span></div><ChevronRight size={16}/></a>;})}</div>:<Empty title="검토할 콘텐츠가 없어요."><p>제품을 선택해 첫 초안을 작성해 보세요.</p></Empty>}</section><section className="panel"><div className="section-title"><h2>최근 작업</h2></div>{data.activities.length?<ol className="activity-list">{data.activities.slice(0,6).map(a=><li key={a.id}><span className="activity-line"/><div><strong>{a.title}</strong><p>{({post_created:'초안 작성',post_updated:'콘텐츠 수정',post_review:'검토 요청',post_approve:'문구 검토 완료',post_reopen:'초안으로 되돌림',post_deleted:'콘텐츠 삭제',profile_imported:'저장소 기반 기본 설정',profile_corrected:'제품 저장소 정정',profile_updated:'제품 정보 변경',profile_reviewed:'제품 정보 확인'} as Record<string,string>)[a.action] || a.action} · {date(a.createdAt)}</p></div></li>)}</ol>:<p className="empty-activity">콘텐츠와 제품 정보를 저장하면 여기에 기록돼요.</p>}</section></div>
   </>;
 }
 
@@ -119,6 +119,7 @@ type Mutate=<T>(path:string,body:unknown,method?:string)=>Promise<T>;
 function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Project;post?:Post;busy:boolean;dirty:boolean;setDirty:(v:boolean)=>void;mutate:Mutate;notify:(v:string)=>void}) {
   const [form,setForm]=useState<PostInput>({title:post?.title||'',caption:post?.caption||'',brief:post?.brief||'',channel:post?.channel||'x',language:post?.language||'ko'});
   const [imageName,setImageName]=useState(''), [imageError,setImageError]=useState(''), [reading,setReading]=useState(false);
+  const [confirmingDelete,setConfirmingDelete]=useState(false), [deleting,setDeleting]=useState(false);
   const reader=useRef<FileReader|null>(null), imageInput=useRef<HTMLInputElement|null>(null);
   useEffect(()=>()=>{if(reader.current){reader.current.onload=null;reader.current.onerror=null;reader.current.abort();}},[]);
   function chooseImage(file?:File) {
@@ -138,6 +139,12 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
   const update=(key:keyof PostInput,value:string)=>{setForm(p=>({...p,[key]:value}));setDirty(true);};
   async function save(event:FormEvent) {event.preventDefault();if(busy||reading)return;try{const result=await mutate<Post>(`projects/${project.slug}/posts${post?`/${post.id}`:''}`,{...form,...(post?{revision:post.revision}:{})},post?'PATCH':'POST');if(!post)window.location.assign(`${projectPath(project)}/${result.id}`);}catch{}}
   async function action(action:string) {if(!post)return;try{await mutate(`projects/${project.slug}/posts/${post.id}/${action}`,{revision:post.revision});}catch{}}
+  async function remove() {
+    if(!post||deleting)return;
+    setDeleting(true);
+    try{await api(`projects/${project.slug}/posts/${post.id}/delete`,{revision:post.revision});setDirty(false);window.location.assign(projectPath(project));}
+    catch(e){notify(e instanceof Error?e.message:'삭제하지 못했어요.');setConfirmingDelete(false);setDeleting(false);}
+  }
   return <>
     <a className="back-link" href={projectPath(project)}><ArrowLeft size={15}/>콘텐츠 목록</a>
     <div className="editor-grid">
@@ -163,6 +170,7 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
         </section>
         <section className="panel review-panel"><div className="section-title"><h3>콘텐츠 검토</h3><ShieldCheck size={18}/></div><p>{project.profileReviewedAt?'제품 정보가 확인되어 있어요. 이미지와 문구를 검토한 뒤 완료해 주세요.':'브랜드 설정의 기능과 설명을 먼저 확인해 주세요.'}</p><a className="text-button" href={settingsPath(project,'brand')}>브랜드 설정 확인<ArrowUpRight size={14}/></a><div className="review-actions">{!post?<p className="muted">초안을 저장하면 검토를 시작할 수 있어요.</p>:post.status==='draft'?<button className="button" disabled={busy||reading||dirty||!form.caption.trim()} onClick={()=>void action('review')}>검토 대기로 보내기</button>:post.status==='review'?<button className="button primary" disabled={busy||reading||dirty||!project.profileReviewedAt} onClick={()=>void action('approve')}><Check size={16}/>콘텐츠 검토 완료</button>:<><p className="ready-label"><Check size={15}/>콘텐츠 검토가 완료됐어요.</p><button className="button" disabled={busy||reading||dirty} onClick={()=>void action('reopen')}>초안으로 되돌리기</button></>}</div></section>
         <div className="publishing-note"><SlidersHorizontal size={17}/><p>문구와 미디어를 검토한 후 아래에서 게시할 계정을 확인해 주세요. 자동·예약 게시는 실행하지 않아요.</p></div>
+        {post&&!post.publishStatus&&<section className="panel danger-panel" aria-label="콘텐츠 삭제">{confirmingDelete?<><p><strong>{post.title}</strong>을(를) 삭제할까요? 첨부한 이미지도 함께 지워지고 되돌릴 수 없어요.</p><div className="danger-actions"><button type="button" className="button danger" disabled={deleting} onClick={()=>void remove()}><Trash2 size={15}/>{deleting?'삭제 중…':'삭제 확정'}</button><button type="button" className="button" disabled={deleting} onClick={()=>setConfirmingDelete(false)}>취소</button></div></>:<><p className="muted">게시 요청 전의 콘텐츠만 삭제할 수 있어요. 삭제 기록은 최근 작업에 남아요.</p><button type="button" className="text-button danger-text" disabled={busy||reading} onClick={()=>setConfirmingDelete(true)}><Trash2 size={14}/>이 콘텐츠 삭제</button></>}</section>}
       </aside>
     </div>
   </>;

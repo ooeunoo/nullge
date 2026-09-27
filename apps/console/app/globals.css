@@ -261,3 +261,9 @@ h1 { font-size: 30px; line-height: 1.4; letter-spacing: -.045em; }
 .upload-selection>button {flex-shrink:0}
 @media(max-width:1000px){.creator-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.format-options{gap:6px}.format-options label{padding:12px 4px}.generation-job{align-items:flex-start;flex-direction:column}.section-title{flex-wrap:wrap;gap:12px}}
+.danger-panel { border-color: #f0d9d9; }
+.danger-panel p { font-size: 14px; margin: 0 0 12px; }
+.danger-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.button.danger { background: #b23b3b; border-color: #b23b3b; color: #fff; }
+.button.danger:disabled { opacity: .6; }
+.danger-text { color: #a33a3a; }

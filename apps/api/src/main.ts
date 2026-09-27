@@ -36,6 +36,7 @@ class ConsoleController {
   }
   @Post('projects/:slug/posts/:id/:action') transition(@Req() r: AuthenticatedRequest,@Param('slug') slug: string,@Param('id',new ParseUUIDPipe()) id: string,@Param('action') action: string,@Body() body: unknown) {
     if(action==='publish'){const input=parse(publishConfirm,body);return this.publisher.enqueue(r.operator.workspaceId,slug,id,r.operator.id,input.revision,input.connectionRevision);}
+    if(action==='delete')return this.store.remove(r.operator.workspaceId,slug,id,r.operator.id,parse(revisionInput,body).revision);
     if (action!=='review' && action!=='approve' && action!=='reopen') throw new BadRequestException('지원하지 않는 작업입니다.');
     return this.store.transition(r.operator.workspaceId,slug,id,r.operator.id,parse(revisionInput,body).revision,action);
   }
