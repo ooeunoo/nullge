@@ -1,9 +1,13 @@
 #!/bin/sh
-# usage: finish-mellow-call-video.sh <clip1.mp4> <clip2.mp4> <out.mp4>
+# usage: finish-mellow-call-video.sh <clip1.mp4> <clip2.mp4> <out.mp4> [headline line 1] [headline line 2]
+# Default headline: 조금 서툴러도, / 대화는 계속.
 # Needs ffmpeg and Google Chrome. Renders the end card, gradient and call toast PNGs on first run.
 # clip1: gradient + incoming-call toast (0.5-2.3 s, pulsing, with chime) + headline from 3.0 s; clip2: headline (+ dialogue subtitles when DIALOGUE=1); then 2 s end card.
 set -e
 C1="$1"; C2="$2"; OUT="$3"; D=$(cd "$(dirname "$0")" && pwd); S="$D/mellow-call-sub"
+H1="$S/h1.txt"; H2="$S/h2.txt"
+if [ -n "$4" ]; then H1=$(mktemp); printf '%s' "$4" > "$H1"; fi
+if [ -n "$5" ]; then H2=$(mktemp); printf '%s' "$5" > "$H2"; fi
 FONT=/System/Library/Fonts/AppleSDGothicNeo.ttc
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 LOGO_LIGHT=/Users/eun/projects/eun/mellow/assets/brand/logo-light.svg
@@ -19,7 +23,7 @@ if [ ! -f "$D/callcard-a.png" ]; then
   printf '%s' "${BASE//LOGO/$LOGO}" | sed 's/ICONCLASS//' > "$D/.callcard-a.html"; render "$D/.callcard-a.html" "$D/callcard-a.png"
   printf '%s' "${BASE//LOGO/$LOGO}" | sed 's/ICONCLASS/ring/' > "$D/.callcard-b.html"; render "$D/.callcard-b.html" "$D/callcard-b.png"; rm -f "$D/.callcard-a.html" "$D/.callcard-b.html"
 fi
-head() { echo "drawtext=fontfile=$FONT:textfile=$S/h1.txt:fontcolor=white:fontsize=88:x=72:y=150:enable='$1',drawtext=fontfile=$FONT:textfile=$S/h2.txt:fontcolor=0xc6ed82:fontsize=88:x=72:y=262:enable='$1'"; }
+head() { echo "drawtext=fontfile=$FONT:textfile=$H1:fontcolor=white:fontsize=88:x=72:y=150:enable='$1',drawtext=fontfile=$FONT:textfile=$H2:fontcolor=0xc6ed82:fontsize=88:x=72:y=262:enable='$1'"; }
 sub() { # $1 name $2 en $3 ko $4 start $5 end
   echo "drawtext=fontfile=$FONT:textfile=$S/$1:fontcolor=0xc6ed82:fontsize=34:x=72:y=1500:enable='between(t,$4,$5)',drawtext=fontfile=$FONT:textfile=$S/$2:fontcolor=white:fontsize=50:x=72:y=1548:enable='between(t,$4,$5)',drawtext=fontfile=$FONT:textfile=$S/$3:fontcolor=white@0.72:fontsize=32:x=72:y=1624:enable='between(t,$4,$5)'"
 }
