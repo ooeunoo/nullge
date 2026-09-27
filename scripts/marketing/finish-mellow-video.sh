@@ -12,7 +12,6 @@ ffmpeg -y -loglevel error -i "$IN" -loop 1 -t 2 -i "$D/endcard.png" -f lavfi -t 
  -filter_complex "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[base];[base][3:v]overlay=0:0:format=auto,\
 drawtext=fontfile=$FONT:text='$L1':fontcolor=white:fontsize=88:x=72:y=150:enable='between(t,0.4,4.6)':alpha='if(lt(t,0.9),(t-0.4)/0.5,1)',\
 drawtext=fontfile=$FONT:text='$L2':fontcolor=0xc6ed82:fontsize=88:x=72:y=262:enable='between(t,0.4,4.6)':alpha='if(lt(t,0.9),(t-0.4)/0.5,1)',\
-drawtext=fontfile=$FONT:text='AI 모델로 연출한 영상':fontcolor=white@0.7:fontsize=28:x=72:y=1820,\
 fps=30,format=yuv420p[v0];[1:v]scale=1080:1920,setsar=1,fps=30,format=yuv420p[v1];\
 [0:a]aformat=sample_rates=48000:channel_layouts=stereo[a0];\
 [v0][a0][v1][2:a]concat=n=2:v=1:a=1[v][a]" -map "[v]" -map "[a]" -c:v libx264 -preset medium -crf 20 -c:a aac -b:a 128k -movflags +faststart "$OUT"
