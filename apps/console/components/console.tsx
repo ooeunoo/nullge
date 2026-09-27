@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { ArrowLeft, ArrowUpRight, Check, ChevronRight, CircleHelp, Copy, FileText, LayoutGrid, LogOut, Plus, RefreshCw, Search, Settings, ShieldCheck, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { CHANNEL_LABELS, STATUS_LABELS, MAX_POST_IMAGE_BYTES, MAX_POST_VIDEO_BYTES, type AuthOptions, type Dashboard, type Post, type PostInput, type Project, type ProfileInput } from '@nullge/contracts';
 import { productBrands } from './product-brands';
-import { SharedSettings,ProductChannels,AutoCreator,GenerationHistory,GeneratedAsset,PublishPanel } from './marketing';
+import { SharedSettings,ProductChannels,AutoCreator,GenerationHistory,PublishPanel } from './marketing';
 
 class ApiError extends Error { constructor(message: string,readonly status: number) { super(message); } }
 async function api<T>(path: string,body?: unknown,method='POST'): Promise<T> {
@@ -80,7 +80,7 @@ export function Console({ route }: { route: string[] }) {
             {!editing && tab==='marketing' && <div className="heading-actions"><a className="button primary" href={`${projectPath(project)}/new`}><Plus size={17}/>콘텐츠 생성</a><a className="button" href={settingsPath(project)}><Settings size={17}/>설정</a></div>}
             {tab==='settings' && <a className="button" href={projectPath(project)}><ArrowLeft size={16}/>콘텐츠로 돌아가기</a>}
           </div>
-          {tab==='marketing' && (editing?post?<><GeneratedAsset post={post}/><Editor key={`${project.id}:${post.id}:${post.revision}`} project={project} post={post} busy={busy||!!post.publishStatus} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>{!dirty&&<PublishPanel project={project} post={post}/>}</>:<AutoCreator project={project} manual={<Editor project={project} busy={busy} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>}/>:<><GenerationHistory project={project}/><PostList projects={[project]} posts={content} project={project}/></>)}
+          {tab==='marketing' && (editing?post?<><Editor key={`${project.id}:${post.id}:${post.revision}`} project={project} post={post} busy={busy||!!post.publishStatus} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>{!dirty&&<PublishPanel project={project} post={post}/>}</>:<AutoCreator project={project} manual={<Editor project={project} busy={busy} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>}/>:<><PostList projects={[project]} posts={content} project={project}/><details className="history-details"><summary>자동 생성 작업 이력</summary><GenerationHistory project={project}/></details></>)}
           {tab==='settings' && <ProductSettings project={project} initialSection={legacySection}><Profile key={`${project.id}:${project.revision}:${project.profileReviewedAt}`} project={project} busy={busy} dirty={dirty} setDirty={setDirty} mutate={mutate}/></ProductSettings>}
         </>:isSettings?<SharedSettings/>:<Overview data={data}/>}
       </main><footer className="main-footer"><span>Nullge Console</span><span>표시 시간대 · 서울 (KST)</span></footer>
@@ -106,12 +106,30 @@ function Overview({data}:{data:Dashboard}) {
   </>;
 }
 
+const FORMAT_LABELS:Record<string,string>={text:'글',image:'이미지',video:'영상'};
+function ChannelMark({channel}:{channel:Post['channel']}) {
+  return <span className={`channel-mark ${channel}`} aria-label={CHANNEL_LABELS[channel]} title={CHANNEL_LABELS[channel]}>{channel==='x'?'𝕏':channel==='threads'?'@':'◎'}</span>;
+}
+function PostCard({post,project}:{post:Post;project:Project}) {
+  const format=post.format||'text';
+  const media=format==='image'&&post.assetId?<img src={`/api/assets/${post.assetId}`} alt="" loading="lazy"/>
+    :format==='video'&&post.assetId?<><video src={`/api/assets/${post.assetId}#t=0.5`} muted playsInline preload="auto"/><span className="play-badge" aria-hidden="true">▶</span></>
+    :<div className={`text-card ${post.channel}`}><div className="text-card-head"><Mark project={project}/><strong>{project.name}</strong></div><p>{post.caption||'본문을 작성해 주세요.'}</p></div>;
+  return <a className={`post-card ${post.status}`} href={`${projectPath(project)}/${post.id}`}>
+    <div className={`post-media ${format}`}>{media}
+      <div className="post-media-top"><ChannelMark channel={post.channel}/><Badge status={post.status}/></div>
+      {post.publishStatus&&<span className={`publish-chip ${post.publishStatus}`}>{({queued:'게시 대기',creating:'게시 준비',processing:'게시 중',submitting:'게시 중',published:'게시됨',failed:'게시 실패',uncertain:'확인 필요'} as Record<string,string>)[post.publishStatus]}</span>}
+    </div>
+    <div className="post-card-body"><strong>{post.title}</strong><p>{format!=='text'&&(post.caption||'문구 없음')}</p><span className="post-meta">{FORMAT_LABELS[format]} · {CHANNEL_LABELS[post.channel]} · <time dateTime={post.updatedAt}>{date(post.updatedAt)}</time></span></div>
+  </a>;
+}
 function PostList({posts,projects,project}:{posts:Post[];projects:Project[];project:Project}) {
-  const [query,setQuery]=useState('');const [status,setStatus]=useState('all');
-  const visible=posts.filter(p=>(status==='all'||p.status===status)&&`${p.title} ${p.caption}`.toLowerCase().includes(query.toLowerCase()));
-  return <><div className="content-toolbar"><div className="status-filters" aria-label="콘텐츠 상태">{[['all','전체'],['draft','초안'],['review','검토 대기'],['approved','검토 완료']].map(([s,label])=><button className={s===status?'selected':''} key={s} onClick={()=>setStatus(s)} aria-pressed={s===status}>{label}<span>{s==='all'?posts.length:posts.filter(p=>p.status===s).length}</span></button>)}</div><label className="search-field"><Search size={16}/><input aria-label="콘텐츠 검색" placeholder="콘텐츠 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
+  const [query,setQuery]=useState('');const [status,setStatus]=useState('all');const [channel,setChannel]=useState('all');
+  const visible=posts.filter(p=>(status==='all'||p.status===status)&&(channel==='all'||p.channel===channel)&&`${p.title} ${p.caption}`.toLowerCase().includes(query.toLowerCase()));
+  return <><div className="content-toolbar"><div className="status-filters" aria-label="콘텐츠 상태">{[['all','전체'],['draft','초안'],['review','검토 대기'],['approved','검토 완료']].map(([s,label])=><button className={s===status?'selected':''} key={s} onClick={()=>setStatus(s)} aria-pressed={s===status}>{label}<span>{s==='all'?posts.length:posts.filter(p=>p.status===s).length}</span></button>)}</div>
+      <div className="toolbar-right"><div className="status-filters channel-filters" aria-label="채널">{[['all','모든 채널'],['instagram','Instagram'],['threads','Threads'],['x','X']].map(([c,label])=><button className={c===channel?'selected':''} key={c} onClick={()=>setChannel(c)} aria-pressed={c===channel}>{label}</button>)}</div><label className="search-field"><Search size={16}/><input aria-label="콘텐츠 검색" placeholder="콘텐츠 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label></div></div>
     {!project.profileReviewedAt&&<div className="inline-note"><CircleHelp size={17}/><span>제품 정보를 확인하면 콘텐츠 검토를 완료할 수 있어요.</span><a href={settingsPath(project,'brand')}>정보 확인<ChevronRight size={15}/></a></div>}
-    <section className="panel content-panel">{visible.length?<div className="content-table"><div className="table-heading"><span>콘텐츠</span><span>채널</span><span>상태</span><span>최근 수정</span></div>{visible.map(post=><a className="content-row" key={post.id} href={`${projectPath(project)}/${post.id}`}><div className="post-title"><span className="post-icon"><FileText size={19}/></span><div><strong>{post.title}</strong><p>{post.caption||'본문을 작성해 주세요.'}</p></div></div><span className="channel-label">{CHANNEL_LABELS[post.channel]}</span><Badge status={post.status}/><time dateTime={post.updatedAt}>{date(post.updatedAt)}</time></a>)}</div>:<Empty title={query||status!=='all'?'조건에 맞는 콘텐츠가 없어요.':'첫 이야기를 만들어 볼까요?'}><p>{query||status!=='all'?'검색어 또는 상태를 바꿔 보세요.':`${project.name}의 기능이나 활용 장면을 짧은 글로 시작해 보세요.`}</p>{!query&&status==='all'&&<a className="button" href={`${projectPath(project)}/new`}><Plus size={16}/>첫 콘텐츠 작성</a>}</Empty>}</section>
+    {visible.length?<div className="post-grid">{visible.map(post=><PostCard key={post.id} post={post} project={project}/>)}</div>:<section className="panel"><Empty title={query||status!=='all'||channel!=='all'?'조건에 맞는 콘텐츠가 없어요.':'첫 이야기를 만들어 볼까요?'}><p>{query||status!=='all'||channel!=='all'?'검색어나 필터를 바꿔 보세요.':`${project.name}의 기능이나 활용 장면을 짧은 글로 시작해 보세요.`}</p>{!query&&status==='all'&&channel==='all'&&<a className="button" href={`${projectPath(project)}/new`}><Plus size={16}/>첫 콘텐츠 작성</a>}</Empty></section>}
   </>;
 }
 
@@ -164,11 +182,12 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
         <div className="editor-actions"><span className="muted">{reading?'이미지를 읽는 중…':dirty?'저장하지 않은 변경이 있어요.':post?'모든 변경사항이 저장됐어요.':'초안으로 저장돼요.'}</span><button className="button primary" type="submit" disabled={busy||reading||(!dirty&&!!post)}>{busy?'저장 중…':'초안 저장'}</button></div>
       </form>
       <aside className="editor-aside">
-        <section className="panel preview-panel"><p className="eyebrow">PREVIEW · {CHANNEL_LABELS[form.channel]}</p><div className="preview-identity"><Mark project={project}/><div><strong>{project.name}</strong><span>제품 기준 미리보기</span></div></div>
-          {form.image?.startsWith('data:video/')?<video className="upload-preview" controls preload="metadata" src={form.image}/>:(form.image||(post?.format==='image'&&post.assetId))?<img className="upload-preview" src={form.image||`/api/assets/${post!.assetId}`} alt="첨부 이미지 미리보기"/>:post?.format==='video'&&post.assetId?<video className="upload-preview" controls preload="metadata" src={`/api/assets/${post.assetId}`}/>:null}
+        <section className={`panel preview-panel post-preview ${form.channel}`}><div className="preview-head"><p className="eyebrow">PREVIEW · {CHANNEL_LABELS[form.channel]}</p>{post?.assetId&&!form.image&&<a className="text-button" href={`/api/assets/${post.assetId}`} target="_blank" rel="noreferrer">원본 열기<ArrowUpRight size={13}/></a>}</div>
+          <div className="phone-post"><div className="phone-post-head"><Mark project={project}/><div><strong>{project.name}</strong><span>{form.channel==='instagram'?'Instagram · 피드':form.channel==='threads'?'Threads':'X'}</span></div></div>
+            {form.image?.startsWith('data:video/')?<video className="phone-post-media" controls preload="metadata" src={form.image}/>:(form.image||(post?.format==='image'&&post.assetId))?<img className="phone-post-media" src={form.image||`/api/assets/${post!.assetId}`} alt="첨부 이미지 미리보기"/>:post?.format==='video'&&post.assetId?<video className="phone-post-media" controls preload="metadata" src={`/api/assets/${post.assetId}`}/>:form.channel==='instagram'?<div className="phone-post-media placeholder"><FileText size={22}/><span>Instagram 발행에는 이미지나 영상이 필요해요.</span></div>:null}
+            <p className={`phone-post-caption ${!form.caption?'muted':''}`}>{form.channel==='instagram'&&form.caption&&<strong>{project.name.toLowerCase()} </strong>}{form.caption||'작성한 문구가 여기에 표시돼요.'}</p>
+          </div>
           {(form.image?.startsWith('data:video/')||(!form.image&&post?.format==='video'))&&form.channel!=='instagram'&&<div className="preview-media"><FileText size={22}/><span>영상 직접 게시는 Instagram만 지원해요. 다른 채널은 원본을 내려받아 게시해 주세요.</span></div>}
-          <p className={`preview-copy ${!form.caption?'muted':''}`}>{form.caption||'작성한 문구가 여기에 표시돼요.'}</p>
-          {form.channel==='instagram'&&!form.image&&!post?.assetId&&<div className="preview-media"><FileText size={22}/><span>Instagram 발행에는 미디어가 필요해요.</span></div>}
         </section>
         <section className="panel review-panel"><div className="section-title"><h3>콘텐츠 검토</h3><ShieldCheck size={18}/></div><p>{project.profileReviewedAt?'제품 정보가 확인되어 있어요. 이미지와 문구를 검토한 뒤 완료해 주세요.':'브랜드 설정의 기능과 설명을 먼저 확인해 주세요.'}</p><a className="text-button" href={settingsPath(project,'brand')}>브랜드 설정 확인<ArrowUpRight size={14}/></a><div className="review-actions">{!post?<p className="muted">초안을 저장하면 검토를 시작할 수 있어요.</p>:post.status==='draft'?<button className="button" disabled={busy||reading||dirty||!form.caption.trim()} onClick={()=>void action('review')}>검토 대기로 보내기</button>:post.status==='review'?<button className="button primary" disabled={busy||reading||dirty||!project.profileReviewedAt} onClick={()=>void action('approve')}><Check size={16}/>콘텐츠 검토 완료</button>:<><p className="ready-label"><Check size={15}/>콘텐츠 검토가 완료됐어요.</p><button className="button" disabled={busy||reading||dirty} onClick={()=>void action('reopen')}>초안으로 되돌리기</button></>}</div></section>
         <div className="publishing-note"><SlidersHorizontal size={17}/><p>문구와 미디어를 검토한 후 아래에서 게시할 계정을 확인해 주세요. 자동·예약 게시는 실행하지 않아요.</p></div>
