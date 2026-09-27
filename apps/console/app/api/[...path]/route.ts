@@ -30,7 +30,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       headers:{ cookie:request.headers.get('cookie') || '',origin:configuredOrigin,...(body!==undefined ? { 'content-type':'application/json' } : {}) },body,
     });
     headers.set('X-Content-Type-Options','nosniff');
-    for (const key of ['content-type','location','content-length','content-disposition','referrer-policy']) { const value=upstream.headers.get(key); if (value) headers.set(key,value); }
+    for (const key of ['content-type','location','content-length','content-disposition','referrer-policy',...(route.startsWith('assets/')?['cache-control']:[])]) { const value=upstream.headers.get(key); if (value) headers.set(key,value); }
     for (const value of upstream.headers.getSetCookie()) headers.append('set-cookie',value);
     return new Response(upstream.body,{ status:upstream.status,headers });
   } catch { return fail('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.',503); }

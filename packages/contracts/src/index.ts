@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const channelSchema = z.enum(['x', 'threads', 'instagram']);
 export const MAX_POST_IMAGE_BYTES = 5 * 1024 * 1024;
 export const MAX_POST_VIDEO_BYTES = 15 * 1024 * 1024;
+export const MAX_POST_POSTER_BYTES = 1024 * 1024;
 export const POST_BODY_LIMIT = 21 * 1024 * 1024;
 /** Manual attachment as a data URL: PNG/JPEG up to 5 MB or MP4 up to 15 MB. */
 export const MEDIA_DATA_URL = /^data:(image\/(png|jpeg)|video\/mp4);base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -13,6 +14,8 @@ export const postInput = z.object({
   channel: channelSchema,
   language: z.enum(['ko', 'en']),
   image: z.string().max(Math.ceil(MAX_POST_VIDEO_BYTES / 3) * 4 + 'data:video/mp4;base64,'.length).regex(MEDIA_DATA_URL).optional(),
+  /** Optional first-frame JPEG/PNG for a video attachment, captured in the browser. */
+  poster: z.string().max(Math.ceil(MAX_POST_POSTER_BYTES / 3) * 4 + 'data:image/jpeg;base64,'.length).regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/).optional(),
 }).strict();
 export const postUpdate = postInput.extend({ revision: z.number().int().positive() });
 export const revisionInput = z.object({ revision: z.number().int().positive() }).strict();
@@ -43,9 +46,10 @@ export interface Project {
   revision: number;
   profileReviewedAt: string | null;
 }
-export interface Post extends Omit<PostInput, 'image'> {
+export interface Post extends Omit<PostInput, 'image'|'poster'> {
   format?: 'text'|'image'|'video';
   assetId?: string|null;
+  posterAssetId?: string|null;
   publishStatus?:'queued'|'creating'|'processing'|'submitting'|'published'|'failed'|'uncertain'|null;
   publishError?:string|null;
   publishedUrl?:string|null;

@@ -196,10 +196,13 @@ export class MarketingController {
     @Param("id", new ParseUUIDPipe()) id: string,
     @Res() response: Response,
   ) {
-    const file = await this.store.asset(r.operator.workspaceId, id);
+    const width = [240, 480, 720, 1080].includes(Number(r.query.w)) ? Number(r.query.w) : undefined;
+    const file = await this.store.asset(r.operator.workspaceId, id, width);
     response.setHeader("Content-Type", file.mime);
     response.setHeader("Content-Disposition", "inline");
     response.setHeader("Content-Length", file.content.length);
+    // Asset ids are immutable, so the browser may keep them; still private to the operator session.
+    response.setHeader("Cache-Control", "private, max-age=31536000, immutable");
     response.send(file.content);
   }
 }

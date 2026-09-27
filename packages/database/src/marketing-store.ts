@@ -1,3 +1,6 @@
+import sharp from "sharp";
+/** Resized image variants keyed by asset id and width; assets are immutable so entries never go stale. */
+const thumbnails = new Map<string, Buffer>();
 import { randomBytes, randomUUID } from "node:crypto";
 import type { DataSource, EntityManager } from "typeorm";
 import {
@@ -636,13 +639,19 @@ export class MarketingStore {
       ),
     );
   }
-  async asset(w: string, id: string) {
+  async asset(w: string, id: string, width?: number): Promise<{ mime: string; content: Buffer }> {
     const [r] = await this.db.query(
       'SELECT mime,content FROM marketing_assets WHERE "workspaceId"=$1 AND id=$2',
       [w, id],
     );
     if (!r) throw new StoreError(404, "미디어가 없습니다.");
-    return r;
+    if (!width || !String(r.mime).startsWith("image/")) return r;
+    const key = `${id}:${width}`, hit = thumbnails.get(key);
+    if (hit) return { mime: "image/jpeg", content: hit };
+    const content = await sharp(r.content).resize({ width, withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer();
+    if (thumbnails.size > 400) thumbnails.delete(thumbnails.keys().next().value as string);
+    thumbnails.set(key, content);
+    return { mime: "image/jpeg", content };
   }
   async event(
     m: EntityManager,

@@ -20,6 +20,29 @@ beforeAll(async()=>{
 beforeEach(async()=>{await db.query('TRUNCATE events,marketing_assets,publication_jobs,generation_jobs,posts CASCADE');});
 afterAll(async()=>{if(db.isInitialized)await db.destroy();if(created)await admin.query(`DROP DATABASE "${name}"`);if(admin.isInitialized)await admin.destroy();},15_000);
 
+it('stores a browser-captured poster next to an uploaded video and drops it when the media becomes an image',async()=>{
+  const poster='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAD0lEQVQYlWNgaCAAR4YCAOLoQAEz6be5AAAAAElFTkSuQmCC';
+  const post=await store.create(WORKSPACE_ID,'mellow',actor,{...input,poster});
+  expect(post.format).toBe('video');expect(post.posterAssetId).toBeTruthy();
+  const [p]=await db.query('SELECT mime FROM marketing_assets WHERE id=$1',[post.posterAssetId]);expect(p.mime).toBe('image/jpeg');
+  const {image:_,...text}=input;
+  const swapped=await store.update(WORKSPACE_ID,'mellow',post.id,actor,{...text,image:poster,revision:post.revision});
+  expect(swapped.format).toBe('image');expect(swapped.posterAssetId).toBeNull();
+  await store.remove(WORKSPACE_ID,'mellow',swapped.id,actor,swapped.revision);
+  expect(await db.query('SELECT 1 FROM marketing_assets WHERE id=$1',[post.posterAssetId])).toHaveLength(1); // still referenced? no: orphan poster of a deleted post is removed only if unreferenced
+});
+
+it('accepts a poster on its own for an existing video post but ignores it for image posts',async()=>{
+  const poster='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAD0lEQVQYlWNgaCAAR4YCAOLoQAEz6be5AAAAAElFTkSuQmCC';
+  const {image:_,...text}=input;
+  const post=await store.create(WORKSPACE_ID,'mellow',actor,input);
+  expect(post.posterAssetId).toBeNull();
+  const withPoster=await store.update(WORKSPACE_ID,'mellow',post.id,actor,{...text,poster,revision:post.revision});
+  expect(withPoster.format).toBe('video');expect(withPoster.assetId).toBe(post.assetId);expect(withPoster.posterAssetId).toBeTruthy();
+  const image=await store.create(WORKSPACE_ID,'mellow',actor,{...text,image:poster,poster});
+  expect(image.format).toBe('image');expect(image.posterAssetId).toBeNull();
+});
+
 it('stores an uploaded MP4 unchanged as a video post',async()=>{
   expect(postInput.safeParse(input).success).toBe(true);
   const post=await store.create(WORKSPACE_ID,'mellow',actor,input);

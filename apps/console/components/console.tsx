@@ -121,8 +121,8 @@ type ConnectionLite={channel:Post['channel'];connected:boolean;username:string|n
 function PostCard({post,project,connection,act,busy}:{post:Post;project:Project;connection?:ConnectionLite;act:Act;busy:boolean}) {
   const [confirming,setConfirming]=useState(false);
   const format=post.format||'text';
-  const media=format==='image'&&post.assetId?<img src={`/api/assets/${post.assetId}`} alt="" loading="lazy"/>
-    :format==='video'&&post.assetId?<><video src={`/api/assets/${post.assetId}#t=0.2`} muted playsInline preload="auto"/><span className="play-badge" aria-hidden="true">▶</span></>
+  const media=format==='image'&&post.assetId?<img src={`/api/assets/${post.assetId}?w=480`} alt="" loading="lazy"/>
+    :format==='video'&&post.assetId?<>{post.posterAssetId?<img src={`/api/assets/${post.posterAssetId}?w=480`} alt="" loading="lazy"/>:<video src={`/api/assets/${post.assetId}#t=0.2`} muted playsInline preload="auto"/>}<span className="play-badge" aria-hidden="true">▶</span></>
     :<div className={`text-card ${post.channel}`}><div className="text-card-head"><Mark project={project}/><strong>{project.name}</strong></div><p>{post.caption||'본문을 작성해 주세요.'}</p></div>;
   const base=`projects/${project.slug}/posts/${post.id}`;
   const publishState=post.publishStatus?({queued:'게시 대기',creating:'게시 준비',processing:'게시 중',submitting:'게시 중',published:'게시됨',failed:'게시 실패',uncertain:'확인 필요'} as Record<string,string>)[post.publishStatus]:null;
@@ -173,7 +173,7 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
     }
     setReading(true);setDirty(true);
     const next=new FileReader();reader.current=next;
-    next.onload=()=>{setForm(p=>({...p,image:String(next.result)}));setImageName(file.name);setReading(false);};
+    next.onload=()=>{const data=String(next.result);if(video){void capturePoster(data).then(poster=>{setForm(p=>({...p,image:data,...(poster?{poster}:{})}));setImageName(file.name);setReading(false);});}else{setForm(p=>{const {poster:_,...rest}=p;return {...rest,image:data};});setImageName(file.name);setReading(false);}};
     next.onerror=()=>{setImageError('이미지를 읽지 못했어요. 다시 선택해 주세요.');setReading(false);};
     next.readAsDataURL(file);
   }
@@ -198,7 +198,8 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
           <label>게시 문구<textarea rows={10} maxLength={5000} value={form.caption} onChange={e=>update('caption',e.target.value)} placeholder="독자에게 전하고 싶은 이야기를 작성해 주세요."/></label>
           <div className="caption-tools"><span>{Array.from(form.caption).length}자</span><button type="button" className="text-button" disabled={!form.caption} onClick={()=>{void navigator.clipboard.writeText(form.caption).then(()=>notify('문구를 복사했어요.')).catch(()=>notify('복사하지 못했어요. 본문을 선택해 복사해 주세요.'));}}><Copy size={14}/>문구 복사</button></div>
           <label>{post?.assetId?'미디어 교체':'미디어 첨부'}<span className="field-hint">PNG · JPEG 최대 5 MB / MP4 최대 15 MB (영상 게시는 Instagram만)</span><input ref={imageInput} type="file" accept="image/png,image/jpeg,video/mp4" onChange={e=>chooseImage(e.target.files?.[0])}/></label>
-          {form.image&&<div className="upload-selection"><span>{imageName}</span><button type="button" className="text-button" onClick={()=>{setForm(({image,...rest})=>rest);setImageName('');if(imageInput.current)imageInput.current.value='';}}>선택 취소</button></div>}
+          {(form.image?.startsWith('data:video/')||(!form.image&&post?.format==='video'))&&<label>썸네일 이미지<span className="field-hint">선택 · PNG·JPEG 최대 1 MB · 피드와 미리보기의 첫 화면으로 쓰여요{form.poster?' · 선택됨':post?.posterAssetId?' · 등록됨':''}</span><input type="file" accept="image/png,image/jpeg" onChange={e=>{const f=e.target.files?.[0];if(!f)return;if(!['image/png','image/jpeg'].includes(f.type)||f.size>1024*1024){setImageError('1 MB 이하의 PNG 또는 JPEG 썸네일을 선택해 주세요.');return;}const fr=new FileReader();fr.onload=()=>{setForm(p=>({...p,poster:String(fr.result)}));setDirty(true);};fr.readAsDataURL(f);}}/></label>}
+          {form.image&&<div className="upload-selection"><span>{imageName}</span><button type="button" className="text-button" onClick={()=>{setForm(({image,poster,...rest})=>rest);setImageName('');if(imageInput.current)imageInput.current.value='';}}>선택 취소</button></div>}
         </fieldset>
         {imageError&&<p className="error" role="alert">{imageError}</p>}
         <div className="editor-actions"><span className="muted">{reading?'이미지를 읽는 중…':dirty?'저장하지 않은 변경이 있어요.':post?'모든 변경사항이 저장됐어요.':'초안으로 저장돼요.'}</span><button className="button primary" type="submit" disabled={busy||reading||(!dirty&&!!post)}>{busy?'저장 중…':'초안 저장'}</button></div>
@@ -206,7 +207,7 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
       <aside className="editor-aside">
         <section className={`panel preview-panel post-preview ${form.channel}`}><div className="preview-head"><p className="eyebrow">PREVIEW · {CHANNEL_LABELS[form.channel]}</p>{post?.assetId&&!form.image&&<a className="text-button" href={`/api/assets/${post.assetId}`} target="_blank" rel="noreferrer">원본 열기<ArrowUpRight size={13}/></a>}</div>
           <div className="phone-post"><div className="phone-post-head"><Mark project={project}/><div><strong>{project.name}</strong><span>{form.channel==='instagram'?'Instagram · 피드':form.channel==='threads'?'Threads':'X'}</span></div></div>
-            {form.image?.startsWith('data:video/')?<video className="phone-post-media" controls preload="metadata" src={form.image}/>:(form.image||(post?.format==='image'&&post.assetId))?<img className="phone-post-media" src={form.image||`/api/assets/${post!.assetId}`} alt="첨부 이미지 미리보기"/>:post?.format==='video'&&post.assetId?<video className="phone-post-media" controls preload="metadata" src={`/api/assets/${post.assetId}`}/>:form.channel==='instagram'?<div className="phone-post-media placeholder"><FileText size={22}/><span>Instagram 발행에는 이미지나 영상이 필요해요.</span></div>:null}
+            {form.image?.startsWith('data:video/')?<video className="phone-post-media" controls preload="metadata" poster={form.poster} src={form.image}/>:(form.image||(post?.format==='image'&&post.assetId))?<img className="phone-post-media" src={form.image||`/api/assets/${post!.assetId}`} alt="첨부 이미지 미리보기"/>:post?.format==='video'&&post.assetId?<video className="phone-post-media" controls preload="metadata" poster={post.posterAssetId?`/api/assets/${post.posterAssetId}?w=720`:undefined} src={`/api/assets/${post.assetId}`}/>:form.channel==='instagram'?<div className="phone-post-media placeholder"><FileText size={22}/><span>Instagram 발행에는 이미지나 영상이 필요해요.</span></div>:null}
             <p className={`phone-post-caption ${!form.caption?'muted':''}`}>{form.channel==='instagram'&&form.caption&&<strong>{project.name.toLowerCase()} </strong>}{form.caption||'작성한 문구가 여기에 표시돼요.'}</p>
           </div>
           {(form.image?.startsWith('data:video/')||(!form.image&&post?.format==='video'))&&form.channel!=='instagram'&&<div className="preview-media"><FileText size={22}/><span>영상 직접 게시는 Instagram만 지원해요. 다른 채널은 원본을 내려받아 게시해 주세요.</span></div>}
@@ -219,6 +220,17 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
   </>;
 }
 
+/** Grab a first-frame JPEG from a video data URL in the browser so feeds can show a poster without server-side video tools. */
+function capturePoster(src:string):Promise<string|undefined> {
+  return new Promise(resolve=>{
+    const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';v.src=src;
+    const done=(poster?:string)=>{v.removeAttribute('src');v.load();resolve(poster);};
+    const timer=setTimeout(()=>done(),8000);
+    v.onerror=()=>{clearTimeout(timer);done();};
+    v.onloadeddata=()=>{try{v.currentTime=Math.min(0.2,(v.duration||1)/2);}catch{clearTimeout(timer);done();}};
+    v.onseeked=()=>{clearTimeout(timer);try{const scale=Math.min(1,720/(v.videoWidth||720));const c=document.createElement('canvas');c.width=Math.round((v.videoWidth||720)*scale);c.height=Math.round((v.videoHeight||1280)*scale);c.getContext('2d')!.drawImage(v,0,0,c.width,c.height);done(c.toDataURL('image/jpeg',0.85));}catch{done();}};
+  });
+}
 function ProductSettings({project,initialSection,children}:{project:Project;initialSection?:'brand'|'channels';children:React.ReactNode}) {
   const sections:[string,string,string][]=[['brand','브랜드','제품 설명, 고객, 말투처럼 콘텐츠의 기준이 되는 정보'],['channels','채널','이 제품의 SNS 계정 연결과 게시 경로']];
   useEffect(()=>{

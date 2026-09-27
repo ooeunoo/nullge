@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { DataSource, EntityManager } from 'typeorm';
 import type { Project, Post, PostInput, ProfileInput, Activity } from '@nullge/contracts';
-import { uploadedMedia, type UploadedMedia } from './uploaded-image';
+import { uploadedImage, uploadedMedia, type UploadedMedia } from './uploaded-image';
 
 export class StoreError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
@@ -11,6 +11,11 @@ async function mediaContent(image?: string): Promise<UploadedMedia | undefined> 
   if (image === undefined) return undefined;
   try { return await uploadedMedia(image); }
   catch (error) { throw new StoreError(400, (error as Error).message); }
+}
+async function posterContent(media: UploadedMedia | undefined, poster?: string): Promise<UploadedMedia | undefined> {
+  if (!poster || (media && media.format !== 'video')) return undefined; // no media: poster applies only if the post already holds a video
+  try { return { content: await uploadedImage(poster), mime: 'image/jpeg', format: 'image' }; }
+  catch { return undefined; } // a broken poster never blocks the upload; the feed falls back to the video itself
 }
 export class Store {
   constructor(readonly db: DataSource) {}
@@ -31,25 +36,28 @@ export class Store {
     await manager.query('INSERT INTO events (id,"workspaceId","projectId","actorId",action,title,"postId") VALUES ($1,$2,$3,$4,$5,$6,$7)', [randomUUID(),workspaceId,projectId,actorId,action,title,postId]);
   }
   async create(workspaceId: string, slug: string, actorId: string, input: PostInput): Promise<Post> {
-    const media = await mediaContent(input.image);
+    const media = await mediaContent(input.image), poster = await posterContent(media, input.poster);
     return this.db.transaction(async manager => {
       const project = await this.project(workspaceId, slug, manager, true);
       const assetId = media ? await this.saveMedia(manager, workspaceId, project.id, media) : null;
-      const [post] = await manager.query(`INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",format,"assetId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`, [randomUUID(),workspaceId,project.id,input.title,input.caption,input.brief,input.channel,input.language,project.revision,media?media.format:'text',assetId]);
+      const posterAssetId = poster && media?.format === 'video' ? await this.saveMedia(manager, workspaceId, project.id, poster) : null;
+      const [post] = await manager.query(`INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",format,"assetId","posterAssetId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`, [randomUUID(),workspaceId,project.id,input.title,input.caption,input.brief,input.channel,input.language,project.revision,media?media.format:'text',assetId,posterAssetId]);
       await this.event(manager,workspaceId,project.id,actorId,'post_created',post.title,post.id);
       return normalized(post);
     });
   }
   async update(workspaceId: string, slug: string, id: string, actorId: string, input: PostInput & { revision: number }): Promise<Post> {
-    const media = await mediaContent(input.image);
+    const media = await mediaContent(input.image), poster = await posterContent(media, input.poster);
     return this.db.transaction(async manager => {
       const project = await this.project(workspaceId,slug,manager,true);
       const assetId = media ? await this.saveMedia(manager, workspaceId, project.id, media) : null;
+      const posterAssetId = poster ? await this.saveMedia(manager, workspaceId, project.id, poster) : null;
       const [post] = await manager.query(`WITH changed AS (UPDATE posts SET title=$5,caption=$6,brief=$7,channel=$8,language=$9,
         status='draft',"approvedAt"=NULL,"approvedBy"=NULL,"profileRevision"=$10,revision=revision+1,"updatedAt"=now(),
-        "assetId"=COALESCE($11::uuid,"assetId"),format=CASE WHEN $11::uuid IS NULL THEN format ELSE $12::text END
+        "assetId"=COALESCE($11::uuid,"assetId"),format=CASE WHEN $11::uuid IS NULL THEN format ELSE $12::text END,
+        "posterAssetId"=CASE WHEN $11::uuid IS NULL THEN (CASE WHEN format='video' THEN COALESCE($13::uuid,"posterAssetId") ELSE "posterAssetId" END) ELSE $13::uuid END
         WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3 AND revision=$4 AND "publishStatus" IS NULL RETURNING *) SELECT * FROM changed`,
-        [workspaceId,project.id,id,input.revision,input.title,input.caption,input.brief,input.channel,input.language,project.revision,assetId,media?media.format:null]);
+        [workspaceId,project.id,id,input.revision,input.title,input.caption,input.brief,input.channel,input.language,project.revision,assetId,media?media.format:null,posterAssetId]);
       if (!post) throw new StoreError(409, '다른 화면에서 변경되었거나 이 제품의 콘텐츠가 아닙니다. 새로고침해 주세요.');
       await this.event(manager,workspaceId,project.id,actorId,'post_updated',post.title,post.id);
       return normalized(post);
@@ -87,8 +95,8 @@ export class Store {
       await manager.query('UPDATE events SET "postId"=NULL WHERE "postId"=$1', [id]);
       await manager.query('UPDATE generation_jobs SET "postId"=NULL WHERE "postId"=$1', [id]);
       await manager.query('DELETE FROM posts WHERE id=$1', [id]);
-      if (current.assetId) {
-        await manager.query(`DELETE FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3 AND NOT EXISTS (SELECT 1 FROM posts WHERE "assetId"=$1)`, [current.assetId,workspaceId,project.id]);
+      for (const asset of [current.assetId, current.posterAssetId]) if (asset) {
+        await manager.query(`DELETE FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3 AND NOT EXISTS (SELECT 1 FROM posts WHERE "assetId"=$1 OR "posterAssetId"=$1)`, [asset,workspaceId,project.id]);
       }
       await this.event(manager,workspaceId,project.id,actorId,'post_deleted',current.title);
       return { id };
