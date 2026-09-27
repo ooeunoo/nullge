@@ -293,18 +293,18 @@ export function ProductChannels({ project }: { project: Project }) {
       <div className="panel channel-panel">
         <table className="channel-table">
           <thead>
-            <tr><th scope="col">채널</th><th scope="col">상태</th><th scope="col">계정</th><th scope="col">연결 방식</th><th scope="col">인증 만료</th><th scope="col"><span className="visually-hidden">동작</span></th></tr>
+            <tr><th scope="col">채널</th><th scope="col">상태</th><th scope="col" className="col-optional">계정</th><th scope="col" className="col-optional">연결 방식</th><th scope="col" className="col-optional">인증 만료</th><th scope="col"><span className="visually-hidden">동작</span></th></tr>
           </thead>
           <tbody>
             {rows.map((c) => {
               const buffer = bufferChannels.filter(channel => channel.service === c.channel);
               return (
                 <tr key={c.channel}>
-                  <td data-label="채널"><span className="channel-name"><span className="channel-symbol">{c.channel === "x" ? "𝕏" : c.channel === "threads" ? "@" : "◎"}</span>{CHANNEL_LABELS[c.channel]}</span></td>
+                  <td data-label="채널"><span className="channel-name"><span className="channel-symbol">{c.channel === "x" ? "𝕏" : c.channel === "threads" ? "@" : "◎"}</span><span className="channel-text">{CHANNEL_LABELS[c.channel]}{c.connected && c.username && <span className="channel-sub">@{c.username}</span>}</span></span></td>
                   <td data-label="상태"><span className={`badge ${c.connected ? "approved" : "draft"}`}>{c.connected ? "연결됨" : "미연결"}</span></td>
-                  <td data-label="계정" className={c.connected ? undefined : "empty"}>{c.connected && c.username ? <strong>@{c.username}</strong> : <span className="muted">—</span>}</td>
-                  <td data-label="연결 방식" className={c.connected ? undefined : "empty"}>{c.connected ? (c.provider === "buffer" ? "Buffer" : "직접") : <span className="muted">—</span>}</td>
-                  <td data-label="인증 만료" className={c.connected ? undefined : "empty"}>{c.connected ? (c.expiresAt ? when(c.expiresAt) : <span className="muted">공급자 기준</span>) : <span className="muted">—</span>}</td>
+                  <td data-label="계정" className="col-optional">{c.connected && c.username ? <strong>@{c.username}</strong> : <span className="muted">—</span>}</td>
+                  <td data-label="연결 방식" className="col-optional">{c.connected ? (c.provider === "buffer" ? "Buffer" : "직접") : <span className="muted">—</span>}</td>
+                  <td data-label="인증 만료" className="col-optional">{c.connected ? (c.expiresAt ? when(c.expiresAt) : <span className="muted">공급자 기준</span>) : <span className="muted">—</span>}</td>
                   <td data-label="동작">
                     <div className="channel-actions">
                       <button className="button primary" disabled={busy} onClick={() => void action(c, "authorize")}>
@@ -322,7 +322,7 @@ export function ProductChannels({ project }: { project: Project }) {
                       )}
                       {c.connected && (
                         <>
-                          <button className="button" disabled={busy} onClick={() => void action(c, "verify")}>다시 확인</button>
+                          <button className="button col-optional" disabled={busy} onClick={() => void action(c, "verify")}>다시 확인</button>
                           <button className="text-button danger-text" disabled={busy}
                             onClick={() => { if (confirm(`${project.name}의 ${CHANNEL_LABELS[c.channel]} 연결을 해제할까요? 저장된 토큰이 삭제됩니다.`)) void action(c, "disconnect"); }}>
                             해제
