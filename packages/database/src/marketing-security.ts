@@ -116,7 +116,7 @@ export async function downloadMedia(value: string) {
     )
       throw new StoreError(
         400,
-        "생성 미디어 CDN 호스트를 서버 허용 목록에 등록해 주세요.",
+        `생성 미디어 CDN 호스트 ${url.hostname}을(를) 서버 HIGGSFIELD_MEDIA_HOSTS 허용 목록에 등록해 주세요.`,
       );
     const addresses = await lookup(url.hostname, { all: true });
     if (!addresses.length || addresses.some((a) => !publicAddress(a.address)))

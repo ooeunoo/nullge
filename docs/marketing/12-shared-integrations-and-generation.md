@@ -60,7 +60,7 @@ Implemented 2026-09-25 in Nullge (not in individual product admins).
 
 - Content memory covers recent records saved in this console, not external SNS history. Model-guided topic selection plus local text/descriptor similarity reduces repetition; it does not guarantee semantic uniqueness. Older content outside the bounded window and media without stored visual descriptors need operator review.
 - Initial implementation used mocked providers only. One user-approved live text generation subsequently succeeded on 2026-09-26 (record below). Live media generation and real public posting remain untested and were not authorized.
-- Higgsfield image uses Soul Standard, `batch_size:1`, `1080p`, `3:4` (old mellow's `num_images`, `2K`, `4:5` did not match the currently documented schema). Video retains mellow's Kling v2.1 Master endpoint; current account availability must be verified before enabling its price.
+- Higgsfield image uses Soul 2 (`higgsfield-ai/soul/v2/standard`), `batch_size:1`, `1080p`, `3:4`; the API platform lists it at US$0.0032 (720p) / US$0.0057 (1080p) per image, versus US$0.0938–0.1875 for the older Soul Standard (checked 2026-09-27). Video uses Kling 3.0 Standard (`kling-video/v3.0/std/text-to-video`, `duration:5`, `9:16`, `sound:off`), billed per second (US$0.084/s list, US$0.0462/s promo until 2026-10-01). Note: higgsfield.ai subscription credits do not apply to the API; the API has its own USD balance at open.higgsfield.ai.
 - OAuth code paths for all three providers are implemented. Meta live setup still requires developer-app configuration, account login and consent; identity verification alone is not proof of every publishing permission. X token rotation uses the stored refresh token under a database lock; failed/invalid refresh requires reauthorization.
 - Direct video publishing is Instagram only. X images capped at 5 MB. Instagram image publishing requires JPEG; PNG output must be converted/manual-posted. Media can be opened/downloaded for manual posting.
 - Failed/uncertain submissions need operator/provider reconciliation; no reset/retry button that could duplicate charges/posts.
@@ -69,7 +69,7 @@ Implemented 2026-09-25 in Nullge (not in individual product admins).
 ## Sources checked
 
 - OpenAI Docs skill: [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [gpt-4o-mini pricing](https://developers.openai.com/api/docs/models/gpt-4o-mini).
-- [Higgsfield API](https://higgsfield.ai/higgsfield-api), [Soul schema](https://open.higgsfield.ai/models/higgsfield-ai/soul/standard/api-reference).
+- [Higgsfield API](https://higgsfield.ai/higgsfield-api), [Soul 2 schema](https://open.higgsfield.ai/models/higgsfield-ai/soul/v2/standard/api-reference), [Kling 3.0 schema](https://open.higgsfield.ai/models/kling-video/v3.0/std/text-to-video/api-reference).
 - [X PKCE](https://docs.x.com/fundamentals/authentication/oauth-2-0/authorization-code), [create post](https://docs.x.com/x-api/posts/create-post), [media upload](https://docs.x.com/x-api/media/upload-media).
 - Meta's official [Threads collection](https://www.postman.com/meta/threads/documentation/dht3nzz/threads-api); developer.facebook.com rate-limited the document fetch. Existing mellow's Meta request flow was reused.
 

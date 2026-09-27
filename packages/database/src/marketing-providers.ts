@@ -8,8 +8,8 @@ import { StoreError } from "./store";
 import { PLANNING_OUTPUT_TOKENS, type ContentCandidate, type ContentHistory } from "./marketing-history";
 export type Credentials = Partial<Record<SecretField, string>>;
 export const MEDIA_MODELS = {
-  image: "higgsfield-ai/soul/standard",
-  video: "kling-video/v2.1/master/text-to-video",
+  image: "higgsfield-ai/soul/v2/standard", // $0.0057 at 1080p (open.higgsfield.ai, 2026-09-27)
+  video: "kling-video/v3.0/std/text-to-video", // per-second pricing; 5 s clip
 };
 export const X_SCOPES = [
   "tweet.read",
@@ -249,7 +249,7 @@ export function renderMedia(
     "POST",
     format === "image"
       ? { prompt, batch_size: 1, resolution: "1080p", aspect_ratio: "3:4" }
-      : { prompt, duration: 5, aspect_ratio: "9:16" },
+      : { prompt, duration: 5, aspect_ratio: "9:16", sound: "off" },
   );
 }
 export function mediaStatus(c: Credentials, id: string) {

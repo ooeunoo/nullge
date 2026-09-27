@@ -460,7 +460,7 @@ describe("shared integrations and protected marketing workflow", () => {
     vi.stubGlobal("fetch", fetch);
     await worker.tick();
     const mediaCall = fetch.mock.calls.find(([url]) =>
-      String(url).includes("/soul/standard"),
+      String(url).includes("/soul/v2/standard"),
     )!;
     expect(JSON.parse(mediaCall[1].body)).toMatchObject({
       batch_size: 1,
@@ -475,7 +475,7 @@ describe("shared integrations and protected marketing workflow", () => {
     await worker.tick();
     expect(
       fetch.mock.calls.filter(([url]) =>
-        String(url).includes("/soul/standard"),
+        String(url).includes("/soul/v2/standard"),
       ),
     ).toHaveLength(1);
     expect(
