@@ -4,3 +4,9 @@
 .credentials/
 node_modules/
 _site/
+.next/
+dist/
+.local/
+coverage/
+*.tsbuildinfo
+!.env.example

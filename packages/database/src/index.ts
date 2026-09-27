@@ -1,0 +1,22 @@
+import 'reflect-metadata';
+import { DataSource } from 'typeorm';
+import { ConsoleFoundation1790319600000 } from './migration';
+import { ProductProfiles1790352000000 } from './product-profiles-migration';
+import { MinimoRepositoryCorrection1790352300000 } from './minimo-correction-migration';
+import { MarketingWorkspace1790366400000 } from './marketing-migration';
+import { BufferPublishing1790455200000 } from './buffer-migration';
+import { UploadedAssets1790460000000 } from './uploaded-assets-migration';
+export { MarketingStore } from './marketing-store';
+export { MarketingWorker } from './marketing-worker';
+export { MarketingPublisher, checkAssetSignature } from './marketing-publishing';
+export { listBufferChannels } from './marketing-buffer';
+export { seal, unseal } from './marketing-security';
+export { WORKSPACE_ID } from './migration';
+export { Store, StoreError } from './store';
+export { seedDevelopment } from './seed';
+export function database(url = process.env.DATABASE_URL) {
+  if (!url) throw new Error('DATABASE_URL is required');
+  return new DataSource({ type: 'postgres', url, synchronize: false, logging: false,
+    migrations: [ConsoleFoundation1790319600000, ProductProfiles1790352000000, MinimoRepositoryCorrection1790352300000, MarketingWorkspace1790366400000, BufferPublishing1790455200000, UploadedAssets1790460000000], migrationsTableName: 'nullge_migrations',
+    extra: { max: 8, connectionTimeoutMillis: 5000 } });
+}

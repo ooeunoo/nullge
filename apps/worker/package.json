@@ -1,0 +1,5 @@
+{
+  "name": "@nullge/worker", "version": "0.1.0", "private": true,
+  "scripts": { "build": "tsc", "typecheck": "tsc --noEmit", "start": "node dist/main.js" },
+  "dependencies": { "@nullge/database": "workspace:*" }
+}

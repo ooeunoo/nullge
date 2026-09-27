@@ -1,0 +1,21 @@
+{
+  "name": "@nullge/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "migrate": "node dist/cli.js migrate",
+    "seed": "node dist/cli.js seed"
+  },
+  "dependencies": {
+    "@nullge/contracts": "workspace:*",
+    "dotenv": "^17.3.1",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "sharp": "0.35.4",
+    "typeorm": "^0.3.28"
+  }
+}

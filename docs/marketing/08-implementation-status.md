@@ -1,0 +1,75 @@
+# 구현·배포 상태
+
+확인일: 2026-09-25. 계획과 실제 검증 결과를 구분한다.
+
+최신 작업: 공통 API 설정, 제품별 SNS 연결, 비용 확인 후 자동 콘텐츠 생성, 검토·승인 후 명시적 게시 기능을 구현·배포했다. mellow의 공통 API 키와 X 계정을 Nullge로 이전하고 OpenAI 접근·X 토큰 갱신·계정 조회를 검증했다. 자동 테스트 30개 통과. 이미지·영상은 단가·CDN 호스트 설정 전 차단한다. 아래 초기 기반 구축 기록 중 '미구현' 표시는 당시 상태다. 최신 범위·보안·제약은 [공통 연동과 자동 생성](12-shared-integrations-and-generation.md)을 기준으로 확인한다. 실제 유료 생성·공개 게시 검증은 운영자 확인 전 수행하지 않는다.
+
+## 동작하는 범위
+
+- pnpm workspace: 공개 사이트, Next.js Console, NestJS API, 승인된 생성·게시 작업을 처리하는 Worker, 계약·DB 패키지.
+- Nullge 단일 작업공간에 ClipIt·minimo·mellow·Movy·desk 5개 초기 프로필. 저장소 분석으로 설명·고객 가설·기능 근거·말투·주의 표현을 채웠다. 모두 미검토로 시작하며 가짜 초안/실적은 넣지 않는다.
+- 각 제품에서 실제 사용하는 로고를 사이드바·제품 카드·헤더·미리보기에 반영. 제품·브랜드에서 저장소 위치·로고 출처 확인 가능. 상세 근거는 [제품 기본 설정](10-product-setup.md).
+- 전체 보기, 제품별 콘텐츠 목록/검색/상태 필터, 초안 저장·수정·검토·승인·다시 열기·문구 복사.
+- 제품 프로필 수정·불변 버전 이력·수동 사실 확인. 프로필 변경 시 기존 검토/승인 무효화.
+- DB 트랜잭션·제품 경계·revision 기반 동시 수정 보호.
+- 개발 환경의 로컬 전용 로그인과 운영 Google OAuth 로그인. Nullge 전용 OAuth 앱을 연결하고 허용된 운영자 계정의 실제 로그인·대시보드 진입을 확인했다.
+- DB에 해시만 저장하는 세션, HttpOnly/SameSite 쿠키, OAuth state/nonce/PKCE, 출처 검사, 입력 길이 제한.
+- 공개 사이트는 정적 파일 allowlist만 제공. Console API는 내부 API 프록시를 사용한다.
+
+## 배포 상태
+
+Railway 프로젝트: `nullge` (`3c584db8-6a84-4244-851d-0a4911e42674`)
+
+| 구성 | 상태 |
+| --- | --- |
+| `web` | SUCCESS. [공개 사이트 임시 주소](https://web-production-81643.up.railway.app/) HTTP 200, `/health` 정상 |
+| `Postgres` | PostgreSQL 18, 전용 5GB 볼륨 Ready. 기존 제품 DB와 분리 |
+| `api` | SUCCESS. 마이그레이션 4개 적용. 공통 연동·제품별 채널·비용 확인·명시적 게시 API. 기존 데이터 유지. 공개 도메인 없음 |
+| `console` | SUCCESS. [Console 임시 주소](https://console-production-1969.up.railway.app/) HTTP 200, 내부 API 연결 정상 |
+| `worker` | SUCCESS. 명시적으로 확정한 생성·게시 큐 처리. 자동 생성 예약·자동 승인·자동 게시 없음. 실제 유료 생성·SNS 게시 미실행 |
+| `console.nullge.com` | GoDaddy CNAME·인증 TXT, 소유권 검증, HTTPS 인증서 발급 완료. 실제 HTTPS 200 확인 |
+| `www.nullge.com` | Railway 웹 UI에서 mellow 프로젝트 web 서비스에 이미 등록된 것으로 확인. 해당 도메인 연결만 이전할지 사용자 확인 대기. 현재 GitHub Pages 유지 |
+| 운영자 Google 인증 | 전용 Google Cloud 프로젝트 `nullge`, 앱 `Nullge Console`, 웹 클라이언트 `Nullge Console Production`. 운영자 1명만 테스트 사용자/서버 허용 목록에 등록. 실제 로그인 성공 |
+| DB 자동 백업 | 설정 요청 `Not Authorized`, 조회된 스케줄은 빈 배열. 활성화되지 않음 |
+| GitHub 소스 자동 배포 | 아직 연결하지 않음. 현재 배포는 로컬 소스 CLI 업로드 |
+
+운영 Console의 `CONSOLE_ORIGIN`은 최종 주소 `https://console.nullge.com`이다. 임시 주소는 로그인 화면/배포 점검용이며 인증된 작업용 주소가 아니다.
+
+## 검증 결과
+
+- 2026-09-25 mellow 운영 UI 점검: 테스트 초안 1건을 만들어 저장·수정·새로고침 유지·검토 대기 전환·미확인 프로필 승인 차단·수정 시 초안 복귀·검색·집계·이력을 확인했다. 자동 테스트 13개 재통과. 테스트 글은 초안으로 남겼고 제품 프로필과 SNS 설정은 바꾸지 않았다. AI 생성·SNS 연결·발행은 미구현이다. 상세 결과와 테스트 글 주소는 [mellow 기능 점검](11-mellow-smoke-test.md).
+
+- minimo companion 로고 개정(2026-09-25): 사용자 승인 시안을 `desktop_pet/assets/brand/mark.svg` 벡터 원본으로 정리하고 Console은 `/brands/minimo.svg`로 교체했다. PNG 이전 주소도 갱신했다. 다른 제품 로고·프로필 DB·인증 설정은 바꾸지 않았다.
+- 개정 Console 배포 `6a019e4c-cc8f-4a79-9fbf-db1b49d5a316` SUCCESS. 테스트 13개·타입 검사·콘솔 빌드 성공. HTTPS에서 새 SVG/PNG와 다른 제품 로고 4개 모두 MIME·200·SHA-256 일치, Google 로그인 활성·로컬 로그인 비활성·미인증 dashboard 401 유지 확인.
+- 실제 로그인된 운영 Chrome의 minimo 제품·브랜드 화면에서 사이드바·헤더·브랜드 원본의 새 companion 심볼과 `assets/brand/mark.svg` 출처를 확인했다. 프로필 버전 3·미검토 상태는 유지했다. Console/웹 확인용 페이지를 열어 두었다.
+- minimo 웹도 별도 Railway 프로젝트에 로고 변경 14개 파일만 분리 배포했다: `cee0cdf8-b045-459f-b4a5-df9352222744` SUCCESS. URL `https://web-production-5cb66.up.railway.app/ko/`. 원본 프로젝트의 앱 아이콘·트레이 자산도 교체했으나 설치 파일은 재발행하지 않았다.
+
+- `pnpm typecheck`, `pnpm build` 성공.
+- `pnpm test`: 실제 격리된 로컬 Postgres 테스트 12개 성공. 각 테스트 실행은 임시 DB만 생성·삭제한다.
+- 제품 보강 마이그레이션은 초기값의 전체 일치·revision·검토 여부·연결 콘텐츠를 검사한다. 수정된 프로필과 이전 스냅샷 보존, 반복 실행 안전성, 로고 5개 파일도 검증했다.
+- 제품 분석 API 배포 `e1d9c02a-f07b-40e9-8b41-f6be888bfdfd` 이후 사용자 정정에 따라 `0af4cbc3-adfa-4cec-8fab-0d419a3dac1e` SUCCESS. minimo 이름은 유지하고 `desktop_pet`의 AI 데스크톱 펫 정보로 정정했다. 과거 미니홈피 값은 이전 스냅샷으로만 보존한다.
+- 로고·기본 정보 화면 Console 배포 `f3996e06-883d-4f19-be32-886bcb0b9724` SUCCESS. API 이후 순서대로 배포했으며 Google 인증 설정은 변경하지 않았다.
+- 운영 HTTPS에서 로고 5개 모두 올바른 이미지 MIME·HTTP 200·로컬 원본과 SHA-256 일치를 확인했다. 홈 200, Google 로그인 활성/로컬 로그인 비활성, 미인증 dashboard 401도 유지된다.
+- 실제 로그인된 운영 Chrome에서 로고 5개, minimo 버전 3의 데스크톱 펫 설명·CLI/화면 보기 근거·올바른 `desktop_pet` 경로·주황 픽셀 로고를 확인했다. 검토 완료 버튼은 누르지 않았다. 이번 변경의 모바일 크기 검증은 브라우저 연결 중단으로 완료하지 못했다.
+- 운영 Chrome 주소창에 ‘주의 요함’이 남아 있다. 사이트 정보는 ‘인증서가 유효함’과 HTTPS 미사용 안내를 함께 표시한다. 독립 HTTPS 요청 검증은 성공했으나 브라우저 표시 원인은 아직 확정하지 않았다. 보안 경고 우회나 보안 설정 변경은 하지 않았다.
+- 검증 내용: 초기 데이터, 작업공간/제품 경계, 동시 revision 충돌, 프로필 확인 전 승인 거절, 변경 후 승인 무효화, 버전 보존, seed 반복 안전성, 입력 소유권 주입·위험 URL 거절.
+- 공개 서버: 정적 파일/상태 확인 200, 내부 소스·환경 파일 요청 404, apex 요청을 www로 308 전달하는 서버 동작 확인.
+- 운영 Console: `/api/auth/options`는 `local:false, google:true`, 미로그인 dashboard 401, 개발용 로그인 403. 외부 Origin POST 403, 허용하지 않은 프록시 경로 404는 초기 배포에서 확인했다.
+- Google 로그인 API 재배포 `7bd2937c-750c-48c2-b709-a94cded8fc53` SUCCESS. 실제 Google 계정 선택·기본 프로필/이메일 동의 후 운영자 이름과 4개 제품/0개 초안 대시보드가 표시됨을 확인했다. 별도 Chrome 창에서도 로그인 세션 유지 확인.
+- 로컬 HTTP: 미로그인 401 → 로그인 201 → 4개 제품/0개 초안 조회 200 → 로그아웃 201 → 기존 세션 401 확인.
+- 별도 Chrome 테스트 프로필로 데스크톱 전체 보기·모바일 편집 화면을 렌더링하고 스크린샷 확인. 로그인·4개 제품 표시·편집 화면 이동·모바일 가로 넘침 없음·로그아웃을 검증했다. 테스트 초안은 만들지 않았다.
+- API 마이그레이션/기동 로그와 Worker DB 연결 로그 확인. 운영 Google 로그인은 검증했으며 운영 데이터 저장·로그아웃/만료·다른 계정 거절의 전체 E2E 검증은 아직 하지 않았다.
+
+## 아직 없는 기능
+
+신규 제품 등록/보관 UI, 미디어 업로드, 캠페인, AI 기획·검사, 사용량/예산, SNS OAuth/토큰 저장, 예약·즉시 발행, 발행 이력·성과, 기존 mellow 데이터 이관, Redis/BullMQ.
+
+`approved`는 **문구 검토 완료**다. 실제 발행 가능 상태나 SNS 승인으로 해석하지 않는다. 채널 화면은 모두 미연결로 표시한다. 기존 mellow의 초안·X 토큰·실행기는 변경하지 않았다.
+
+## 진행을 막는 외부 설정
+
+1. Computer Use Chrome 확장으로 GoDaddy의 기존 24개 DNS 레코드를 확인·기록하고 console CNAME/TXT 2개를 추가했다. 기존 웹/메일 레코드는 변경하지 않았다. 이후 브라우저 제어 연결은 다시 불안정해졌다.
+2. www 등록 실패 원인은 mellow 프로젝트 web 서비스의 기존 도메인 등록이다. 서비스/데이터는 그대로 두고 www.nullge.com 연결만 이전하는 승인을 요청했다. DB 백업은 수동 생성도 Not Authorized로 실패했으며 백업/스케줄 목록 모두 비어 있다.
+3. Google OAuth 설정·로그인은 완료했다. 앱은 테스트 모드를 유지하며 운영자 1명만 등록했다. 일반 사용자용 공개 가입 기능은 제공하지 않는다. 제품별 기존 인증 정보는 재사용하지 않았다.
+
+DNS/인증이 완료되기 전 기존 Pages를 종료하거나 운영 로그인 우회 수단을 열지 않는다.

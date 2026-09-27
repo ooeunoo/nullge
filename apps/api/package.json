@@ -1,0 +1,6 @@
+{
+  "name": "@nullge/api", "version": "0.1.0", "private": true,
+  "scripts": { "build": "tsc", "typecheck": "tsc --noEmit", "start": "node dist/main.js" },
+  "dependencies": { "@nullge/contracts": "workspace:*", "@nullge/database": "workspace:*", "@nestjs/common": "^11.1.6", "@nestjs/core": "^11.1.6", "@nestjs/platform-express": "^11.1.6", "express": "^5.1.0", "google-auth-library": "^11.1.0", "reflect-metadata": "^0.2.2", "rxjs": "^7.8.2" },
+  "devDependencies": { "@types/express": "^5.0.6" }
+}
