@@ -650,10 +650,10 @@ export function AutoCreator({ project, manual }: { project: Project; manual: Rea
       </form>
       <aside><section className="panel review-panel creator-context">
         <span className="project-dot" style={{ background: project.color }}/><p className="eyebrow">{project.name}</p>
-        <h3>이 제품을 알고 만들어요</h3><p>{project.description || "제품·브랜드에 등록된 정보를 참고해요."}</p>
+        <h3>이 제품을 알고 만들어요</h3><p>{project.description || "브랜드 설정에 등록된 정보를 참고해요."}</p>
         <ul className="workflow-list"><li>제품의 기능·대상·말투 반영</li><li>최근 게시물과 생성 이력 참고</li><li>겹치는 소재·문구·장면 비교</li><li>완성 후 검토 대기에 저장</li></ul>
         <p className="field-hint">이 콘솔에 저장된 제품별 이력을 참고해요. 최종 내용과 중복 여부를 검토한 뒤 게시할 수 있어요.</p>
-        <a className="text-button" href={`/projects/${project.slug}/brand`}>제품·브랜드 확인<ArrowUpRight size={14}/></a>
+        <a className="text-button" href={`/projects/${project.slug}/settings#brand`}>브랜드 설정 확인<ArrowUpRight size={14}/></a>
       </section></aside>
     </div>}
   </>;
@@ -754,7 +754,7 @@ export function PublishPanel({
             </p>
           )}
           {!connection?.connected ? (
-            <a href={`/projects/${project.slug}/channels`} className="button">
+            <a href={`/projects/${project.slug}/settings#channels`} className="button">
               채널 연결
             </a>
           ) : post.status !== "approved" ? (

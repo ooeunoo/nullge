@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowUpRight, Check, ChevronRight, CircleHelp, Copy, FileText, LayoutGrid, LogOut, Plus, RefreshCw, Search, ShieldCheck, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Check, ChevronRight, CircleHelp, Copy, FileText, LayoutGrid, LogOut, Plus, RefreshCw, Search, Settings, ShieldCheck, SlidersHorizontal } from 'lucide-react';
 import { CHANNEL_LABELS, STATUS_LABELS, MAX_POST_IMAGE_BYTES, type AuthOptions, type Dashboard, type Post, type PostInput, type Project, type ProfileInput } from '@nullge/contracts';
 import { productBrands } from './product-brands';
 import { SharedSettings,ProductChannels,AutoCreator,GenerationHistory,GeneratedAsset,PublishPanel } from './marketing';
@@ -13,6 +13,7 @@ async function api<T>(path: string,body?: unknown,method='POST'): Promise<T> {
   return data as T;
 }
 const projectPath=(project: Project,tab='marketing')=>`/projects/${project.slug}/${tab}`;
+const settingsPath=(project: Project,section?: 'brand'|'channels')=>`${projectPath(project,'settings')}${section?`#${section}`:''}`;
 const date=(value: string)=>new Intl.DateTimeFormat('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Seoul'}).format(new Date(value));
 function Mark({ project,large=false }: { project: Project; large?: boolean }) {
   const brand=productBrands[project.slug];
@@ -52,12 +53,14 @@ export function Console({ route }: { route: string[] }) {
   if (needsLogin) return <Login onLogin={refresh}/>;
   if (!data) return <main className="connection-screen"><h1>작업 공간에 연결할 수 없어요.</h1><p role="alert">{error}</p><button className="button" onClick={()=>void refresh()}><RefreshCw size={16}/>다시 연결</button></main>;
   const project=route[0]==='projects'?data.projects.find(p=>p.slug===route[1]):undefined;
-  const tab=route[2] || 'marketing';
+  const requestedTab=route[2] || 'marketing';
+  const tab=requestedTab==='brand'||requestedTab==='channels'?'settings':requestedTab;
   const content=project?data.posts.filter(p=>p.projectId===project.id):data.posts;
   const post=route[3] && route[3]!=='new'?content.find(p=>p.id===route[3]):undefined;
   const isSettings=route[0]==='settings'&&route.length===1;
-  const notFound=(route.length>0 && route[0]!=='login' && route[0]!=='projects' && !isSettings) || (route[0]==='projects' && (!project || !['marketing','brand','channels'].includes(tab) || route.length>4 || (route[3] && route[3]!=='new' && !post) || (tab!=='marketing' && route[3])));
+  const notFound=(route.length>0 && route[0]!=='login' && route[0]!=='projects' && !isSettings) || (route[0]==='projects' && (!project || !['marketing','settings'].includes(tab) || route.length>4 || (route[3] && route[3]!=='new' && !post) || (tab!=='marketing' && route[3])));
   const editing=project && tab==='marketing' && !!route[3];
+  const legacySection=requestedTab==='brand'||requestedTab==='channels'?requestedTab:undefined;
   return <div className="app-shell">
     <a className="skip-link" href="#main">본문으로 이동</a>
     <aside className="sidebar">
@@ -73,11 +76,12 @@ export function Console({ route }: { route: string[] }) {
         {error && <div role="alert" className="notice error">{error}<button onClick={()=>setError('')} aria-label="오류 메시지 닫기">×</button></div>}
         {notice && <div role="status" className="notice success"><Check size={16}/>{notice}<button onClick={()=>setNotice('')} aria-label="알림 닫기">×</button></div>}
         {notFound ? <Empty title="페이지를 찾을 수 없어요."><a className="button" href="/">전체 보기로 돌아가기</a></Empty> : project ? <>
-          <div className="page-heading"><div className="project-heading"><Mark project={project} large/><div><p className="eyebrow">PRODUCT WORKSPACE</p><h1>{project.name}</h1></div></div>{!editing && tab==='marketing' && <a className="button primary" href={`${projectPath(project)}/new`}><Plus size={17}/>콘텐츠 생성</a>}</div>
-          <div className="tabs" aria-label="제품 메뉴">{[['marketing','콘텐츠'],['brand','제품·브랜드'],['channels','채널']].map(([key,label])=><a key={key} className={tab===key?'selected':''} href={projectPath(project,key)} aria-current={tab===key?'page':undefined}>{label}</a>)}</div>
+          <div className="page-heading"><div className="project-heading"><Mark project={project} large/><div><p className="eyebrow">{tab==='settings'?'PRODUCT SETTINGS':'PRODUCT WORKSPACE'}</p><h1>{project.name}{tab==='settings'&&<span className="heading-suffix"> 설정</span>}</h1></div></div>
+            {!editing && tab==='marketing' && <div className="heading-actions"><a className="button primary" href={`${projectPath(project)}/new`}><Plus size={17}/>콘텐츠 생성</a><a className="button" href={settingsPath(project)}><Settings size={17}/>설정</a></div>}
+            {tab==='settings' && <a className="button" href={projectPath(project)}><ArrowLeft size={16}/>콘텐츠로 돌아가기</a>}
+          </div>
           {tab==='marketing' && (editing?post?<><GeneratedAsset post={post}/><Editor key={`${project.id}:${post.id}:${post.revision}`} project={project} post={post} busy={busy||!!post.publishStatus} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>{!dirty&&<PublishPanel project={project} post={post}/>}</>:<AutoCreator project={project} manual={<Editor project={project} busy={busy} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>}/>:<><GenerationHistory project={project}/><PostList projects={[project]} posts={content} project={project}/></>)}
-          {tab==='brand' && <Profile key={`${project.id}:${project.revision}:${project.profileReviewedAt}`} project={project} busy={busy} dirty={dirty} setDirty={setDirty} mutate={mutate}/>}
-          {tab==='channels' && <ProductChannels project={project}/>}
+          {tab==='settings' && <ProductSettings project={project} initialSection={legacySection}><Profile key={`${project.id}:${project.revision}:${project.profileReviewedAt}`} project={project} busy={busy} dirty={dirty} setDirty={setDirty} mutate={mutate}/></ProductSettings>}
         </>:isSettings?<SharedSettings/>:<Overview data={data}/>}
       </main><footer className="main-footer"><span>Nullge Console</span><span>표시 시간대 · 서울 (KST)</span></footer>
     </div>
@@ -106,7 +110,7 @@ function PostList({posts,projects,project}:{posts:Post[];projects:Project[];proj
   const [query,setQuery]=useState('');const [status,setStatus]=useState('all');
   const visible=posts.filter(p=>(status==='all'||p.status===status)&&`${p.title} ${p.caption}`.toLowerCase().includes(query.toLowerCase()));
   return <><div className="content-toolbar"><div className="status-filters" aria-label="콘텐츠 상태">{[['all','전체'],['draft','초안'],['review','검토 대기'],['approved','검토 완료']].map(([s,label])=><button className={s===status?'selected':''} key={s} onClick={()=>setStatus(s)} aria-pressed={s===status}>{label}<span>{s==='all'?posts.length:posts.filter(p=>p.status===s).length}</span></button>)}</div><label className="search-field"><Search size={16}/><input aria-label="콘텐츠 검색" placeholder="콘텐츠 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
-    {!project.profileReviewedAt&&<div className="inline-note"><CircleHelp size={17}/><span>제품 정보를 확인하면 콘텐츠 검토를 완료할 수 있어요.</span><a href={projectPath(project,'brand')}>정보 확인<ChevronRight size={15}/></a></div>}
+    {!project.profileReviewedAt&&<div className="inline-note"><CircleHelp size={17}/><span>제품 정보를 확인하면 콘텐츠 검토를 완료할 수 있어요.</span><a href={settingsPath(project,'brand')}>정보 확인<ChevronRight size={15}/></a></div>}
     <section className="panel content-panel">{visible.length?<div className="content-table"><div className="table-heading"><span>콘텐츠</span><span>채널</span><span>상태</span><span>최근 수정</span></div>{visible.map(post=><a className="content-row" key={post.id} href={`${projectPath(project)}/${post.id}`}><div className="post-title"><span className="post-icon"><FileText size={19}/></span><div><strong>{post.title}</strong><p>{post.caption||'본문을 작성해 주세요.'}</p></div></div><span className="channel-label">{CHANNEL_LABELS[post.channel]}</span><Badge status={post.status}/><time dateTime={post.updatedAt}>{date(post.updatedAt)}</time></a>)}</div>:<Empty title={query||status!=='all'?'조건에 맞는 콘텐츠가 없어요.':'첫 이야기를 만들어 볼까요?'}><p>{query||status!=='all'?'검색어 또는 상태를 바꿔 보세요.':`${project.name}의 기능이나 활용 장면을 짧은 글로 시작해 보세요.`}</p>{!query&&status==='all'&&<a className="button" href={`${projectPath(project)}/new`}><Plus size={16}/>첫 콘텐츠 작성</a>}</Empty>}</section>
   </>;
 }
@@ -157,11 +161,26 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
           <p className={`preview-copy ${!form.caption?'muted':''}`}>{form.caption||'작성한 문구가 여기에 표시돼요.'}</p>
           {form.channel==='instagram'&&!form.image&&!post?.assetId&&<div className="preview-media"><FileText size={22}/><span>Instagram 발행에는 미디어가 필요해요.</span></div>}
         </section>
-        <section className="panel review-panel"><div className="section-title"><h3>콘텐츠 검토</h3><ShieldCheck size={18}/></div><p>{project.profileReviewedAt?'제품 정보가 확인되어 있어요. 이미지와 문구를 검토한 뒤 완료해 주세요.':'제품·브랜드의 기능과 설명을 먼저 확인해 주세요.'}</p><a className="text-button" href={projectPath(project,'brand')}>제품·브랜드 확인<ArrowUpRight size={14}/></a><div className="review-actions">{!post?<p className="muted">초안을 저장하면 검토를 시작할 수 있어요.</p>:post.status==='draft'?<button className="button" disabled={busy||reading||dirty||!form.caption.trim()} onClick={()=>void action('review')}>검토 대기로 보내기</button>:post.status==='review'?<button className="button primary" disabled={busy||reading||dirty||!project.profileReviewedAt} onClick={()=>void action('approve')}><Check size={16}/>콘텐츠 검토 완료</button>:<><p className="ready-label"><Check size={15}/>콘텐츠 검토가 완료됐어요.</p><button className="button" disabled={busy||reading||dirty} onClick={()=>void action('reopen')}>초안으로 되돌리기</button></>}</div></section>
+        <section className="panel review-panel"><div className="section-title"><h3>콘텐츠 검토</h3><ShieldCheck size={18}/></div><p>{project.profileReviewedAt?'제품 정보가 확인되어 있어요. 이미지와 문구를 검토한 뒤 완료해 주세요.':'브랜드 설정의 기능과 설명을 먼저 확인해 주세요.'}</p><a className="text-button" href={settingsPath(project,'brand')}>브랜드 설정 확인<ArrowUpRight size={14}/></a><div className="review-actions">{!post?<p className="muted">초안을 저장하면 검토를 시작할 수 있어요.</p>:post.status==='draft'?<button className="button" disabled={busy||reading||dirty||!form.caption.trim()} onClick={()=>void action('review')}>검토 대기로 보내기</button>:post.status==='review'?<button className="button primary" disabled={busy||reading||dirty||!project.profileReviewedAt} onClick={()=>void action('approve')}><Check size={16}/>콘텐츠 검토 완료</button>:<><p className="ready-label"><Check size={15}/>콘텐츠 검토가 완료됐어요.</p><button className="button" disabled={busy||reading||dirty} onClick={()=>void action('reopen')}>초안으로 되돌리기</button></>}</div></section>
         <div className="publishing-note"><SlidersHorizontal size={17}/><p>문구와 미디어를 검토한 후 아래에서 게시할 계정을 확인해 주세요. 자동·예약 게시는 실행하지 않아요.</p></div>
       </aside>
     </div>
   </>;
+}
+
+function ProductSettings({project,initialSection,children}:{project:Project;initialSection?:'brand'|'channels';children:React.ReactNode}) {
+  const sections:[string,string,string][]=[['brand','브랜드','제품 설명, 고객, 말투처럼 콘텐츠의 기준이 되는 정보'],['channels','채널','이 제품의 SNS 계정 연결과 게시 경로']];
+  useEffect(()=>{
+    const target=initialSection || (window.location.hash.replace('#','') as 'brand'|'channels'|'');
+    if (!target) return;
+    if (initialSection) window.history.replaceState(null,'',settingsPath(project,initialSection));
+    document.getElementById(target)?.scrollIntoView({block:'start'});
+  },[project,initialSection]);
+  return <div className="product-settings">
+    <nav className="settings-nav" aria-label="설정 섹션">{sections.map(([id,label,description])=><a key={id} href={`#${id}`}><strong>{label}</strong><span>{description}</span></a>)}</nav>
+    <section id="brand" className="settings-section" aria-labelledby="settings-brand-title"><div className="settings-section-title"><h2 id="settings-brand-title">브랜드</h2><p className="muted">저장하면 새 버전이 만들어지고, 바뀐 정보로 기존 콘텐츠를 다시 검토하게 돼요.</p></div>{children}</section>
+    <section id="channels" className="settings-section" aria-labelledby="settings-channels-title"><div className="settings-section-title"><h2 id="settings-channels-title">채널</h2><p className="muted">계정은 제품별로 따로 연결하고, 다른 제품과 공유하지 않아요.</p></div><ProductChannels project={project}/></section>
+  </div>;
 }
 
 function BrandReference({project}:{project:Project}) {
@@ -173,5 +192,5 @@ function BrandReference({project}:{project:Project}) {
 function Profile({project,busy,dirty,setDirty,mutate}:{project:Project;busy:boolean;dirty:boolean;setDirty:(v:boolean)=>void;mutate:Mutate}) {
   const [form,setForm]=useState<ProfileInput>({revision:project.revision,description:project.description,audience:project.audience,facts:project.facts,tone:project.tone,avoid:project.avoid,website:project.website});
   const fields:[keyof Omit<ProfileInput,'revision'>,string,string][]=[['description','한 줄 설명','이 제품은 무엇을 하는 서비스인가요?'],['audience','주요 고객','누구에게 전하고 싶은가요?'],['facts','확인된 기능과 근거','현재 제공하는 기능과 확인한 자료를 함께 적어 주세요.'],['tone','브랜드 말투','어떤 목소리로 이야기할까요?'],['avoid','피해야 할 표현','미확인 기능이나 보장할 수 없는 효과 등'],['website','공식 소개 링크','https://']];
-  return <div className="profile-grid"><form className="panel editor-form" onSubmit={e=>{e.preventDefault();void mutate(`projects/${project.slug}/profile`,form,'PATCH').catch(()=>{});}}><div className="section-title"><h2>제품·브랜드 정보</h2><span className="muted">버전 {project.revision}</span></div>{fields.map(([key,label,hint])=><label key={key}>{label}{key!=='website'?<textarea required={key==='description'} rows={key==='facts'?10:key==='description'?2:3} maxLength={key==='facts'?5000:key==='avoid'?2000:1000} value={String(form[key])} placeholder={hint} onChange={e=>{setForm(f=>({...f,[key]:e.target.value}));setDirty(true);}}/>:<input type="url" maxLength={1000} value={String(form[key])} placeholder={hint} onChange={e=>{setForm(f=>({...f,[key]:e.target.value}));setDirty(true);}}/>}</label>)}<div className="editor-actions"><span className="muted">저장하면 새 버전이 만들어져요.</span><button className="button primary" disabled={busy||!dirty}>변경사항 저장</button></div></form><aside><BrandReference project={project}/><section className="panel review-panel"><ShieldCheck size={22}/><h3>콘텐츠의 기준이 되는 정보</h3><p>기능·가격·출시 상태는 실제 제공 여부를 확인하고 적어 주세요. 정보가 바뀌면 기존 콘텐츠를 다시 검토하게 돼요.</p>{project.profileReviewedAt?<p className="ready-label"><Check size={15}/>현재 버전 확인 완료</p>:<><p className="muted">초기 정보는 저장소를 참고한 초안이에요.</p><button className="button" disabled={busy||dirty||!form.facts.trim()} onClick={()=>void mutate(`projects/${project.slug}/profile/review`,{revision:project.revision}).catch(()=>{})}>현재 정보 확인 완료</button></>}</section></aside></div>;
+  return <div className="profile-grid"><form className="panel editor-form" onSubmit={e=>{e.preventDefault();void mutate(`projects/${project.slug}/profile`,form,'PATCH').catch(()=>{});}}><div className="section-title"><h2>브랜드 정보</h2><span className="muted">버전 {project.revision}</span></div>{fields.map(([key,label,hint])=><label key={key}>{label}{key!=='website'?<textarea required={key==='description'} rows={key==='facts'?10:key==='description'?2:3} maxLength={key==='facts'?5000:key==='avoid'?2000:1000} value={String(form[key])} placeholder={hint} onChange={e=>{setForm(f=>({...f,[key]:e.target.value}));setDirty(true);}}/>:<input type="url" maxLength={1000} value={String(form[key])} placeholder={hint} onChange={e=>{setForm(f=>({...f,[key]:e.target.value}));setDirty(true);}}/>}</label>)}<div className="editor-actions"><span className="muted">저장하면 새 버전이 만들어져요.</span><button className="button primary" disabled={busy||!dirty}>변경사항 저장</button></div></form><aside><BrandReference project={project}/><section className="panel review-panel"><ShieldCheck size={22}/><h3>콘텐츠의 기준이 되는 정보</h3><p>기능·가격·출시 상태는 실제 제공 여부를 확인하고 적어 주세요. 정보가 바뀌면 기존 콘텐츠를 다시 검토하게 돼요.</p>{project.profileReviewedAt?<p className="ready-label"><Check size={15}/>현재 버전 확인 완료</p>:<><p className="muted">초기 정보는 저장소를 참고한 초안이에요.</p><button className="button" disabled={busy||dirty||!form.facts.trim()} onClick={()=>void mutate(`projects/${project.slug}/profile/review`,{revision:project.revision}).catch(()=>{})}>현재 정보 확인 완료</button></>}</section></aside></div>;
 }
