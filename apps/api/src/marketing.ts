@@ -222,8 +222,25 @@ export class PublicAssetController {
       String(r.query.signature || ""),
     );
     const file = await this.store.asset(w, id);
+    const size = file.content.length;
     response.setHeader("Content-Type", file.mime);
-    response.setHeader("Content-Length", file.content.length);
+    response.setHeader("Accept-Ranges", "bytes");
+    // Video fetchers read in byte ranges; answer a single range and fall back to the whole file otherwise.
+    const range = /^bytes=(\d*)-(\d*)$/.exec(String(r.headers.range || ""));
+    if (range && (range[1] || range[2])) {
+      const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+      const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+      if (start > end || start >= size) {
+        response.status(416).setHeader("Content-Range", `bytes */${size}`);
+        response.end();
+        return;
+      }
+      response.status(206).setHeader("Content-Range", `bytes ${start}-${end}/${size}`);
+      response.setHeader("Content-Length", end - start + 1);
+      response.end(file.content.subarray(start, end + 1));
+      return;
+    }
+    response.setHeader("Content-Length", size);
     response.send(file.content);
   }
 }
