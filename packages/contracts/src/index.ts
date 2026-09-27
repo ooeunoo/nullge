@@ -2,14 +2,17 @@ import { z } from 'zod';
 
 export const channelSchema = z.enum(['x', 'threads', 'instagram']);
 export const MAX_POST_IMAGE_BYTES = 5 * 1024 * 1024;
-export const POST_BODY_LIMIT = 7 * 1024 * 1024;
+export const MAX_POST_VIDEO_BYTES = 15 * 1024 * 1024;
+export const POST_BODY_LIMIT = 21 * 1024 * 1024;
+/** Manual attachment as a data URL: PNG/JPEG up to 5 MB or MP4 up to 15 MB. */
+export const MEDIA_DATA_URL = /^data:(image\/(png|jpeg)|video\/mp4);base64,[A-Za-z0-9+/]+={0,2}$/;
 export const postInput = z.object({
   title: z.string().trim().min(1, '제목을 입력해 주세요.').max(120),
   caption: z.string().max(5000),
   brief: z.string().max(1200),
   channel: channelSchema,
   language: z.enum(['ko', 'en']),
-  image: z.string().max(Math.ceil(MAX_POST_IMAGE_BYTES / 3) * 4 + 32).regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/).optional(),
+  image: z.string().max(Math.ceil(MAX_POST_VIDEO_BYTES / 3) * 4 + 'data:video/mp4;base64,'.length).regex(MEDIA_DATA_URL).optional(),
 }).strict();
 export const postUpdate = postInput.extend({ revision: z.number().int().positive() });
 export const revisionInput = z.object({ revision: z.number().int().positive() }).strict();

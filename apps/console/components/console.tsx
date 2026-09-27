@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowUpRight, Check, ChevronRight, CircleHelp, Copy, FileText, LayoutGrid, LogOut, Plus, RefreshCw, Search, Settings, ShieldCheck, SlidersHorizontal, Trash2 } from 'lucide-react';
-import { CHANNEL_LABELS, STATUS_LABELS, MAX_POST_IMAGE_BYTES, type AuthOptions, type Dashboard, type Post, type PostInput, type Project, type ProfileInput } from '@nullge/contracts';
+import { CHANNEL_LABELS, STATUS_LABELS, MAX_POST_IMAGE_BYTES, MAX_POST_VIDEO_BYTES, type AuthOptions, type Dashboard, type Post, type PostInput, type Project, type ProfileInput } from '@nullge/contracts';
 import { productBrands } from './product-brands';
 import { SharedSettings,ProductChannels,AutoCreator,GenerationHistory,GeneratedAsset,PublishPanel } from './marketing';
 
@@ -125,8 +125,9 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
   function chooseImage(file?:File) {
     if(!file)return;
     setImageError('');
-    if(!['image/png','image/jpeg'].includes(file.type)||file.size>MAX_POST_IMAGE_BYTES||!file.size){
-      setImageError('5 MB 이하의 PNG 또는 JPEG 이미지를 선택해 주세요.');
+    const video=file.type==='video/mp4';
+    if(!['image/png','image/jpeg','video/mp4'].includes(file.type)||file.size>(video?MAX_POST_VIDEO_BYTES:MAX_POST_IMAGE_BYTES)||!file.size){
+      setImageError('5 MB 이하의 PNG·JPEG 이미지 또는 15 MB 이하의 MP4 영상을 선택해 주세요.');
       if(imageInput.current)imageInput.current.value='';
       return;
     }
@@ -156,7 +157,7 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
           <label>이야기할 내용<span className="field-hint">소개할 기능이나 전달할 메시지</span><input value={form.brief} maxLength={1200} onChange={e=>update('brief',e.target.value)} placeholder="예: 짧은 통화로 하루의 이야기를 꺼내기"/></label>
           <label>게시 문구<textarea rows={10} maxLength={5000} value={form.caption} onChange={e=>update('caption',e.target.value)} placeholder="독자에게 전하고 싶은 이야기를 작성해 주세요."/></label>
           <div className="caption-tools"><span>{Array.from(form.caption).length}자</span><button type="button" className="text-button" disabled={!form.caption} onClick={()=>{void navigator.clipboard.writeText(form.caption).then(()=>notify('문구를 복사했어요.')).catch(()=>notify('복사하지 못했어요. 본문을 선택해 복사해 주세요.'));}}><Copy size={14}/>문구 복사</button></div>
-          <label>{post?.assetId?'이미지 교체':'이미지 첨부'}<span className="field-hint">PNG · JPEG / 최대 5 MB</span><input ref={imageInput} type="file" accept="image/png,image/jpeg" onChange={e=>chooseImage(e.target.files?.[0])}/></label>
+          <label>{post?.assetId?'미디어 교체':'미디어 첨부'}<span className="field-hint">PNG · JPEG 최대 5 MB / MP4 최대 15 MB (영상 게시는 Instagram만)</span><input ref={imageInput} type="file" accept="image/png,image/jpeg,video/mp4" onChange={e=>chooseImage(e.target.files?.[0])}/></label>
           {form.image&&<div className="upload-selection"><span>{imageName}</span><button type="button" className="text-button" onClick={()=>{setForm(({image,...rest})=>rest);setImageName('');if(imageInput.current)imageInput.current.value='';}}>선택 취소</button></div>}
         </fieldset>
         {imageError&&<p className="error" role="alert">{imageError}</p>}
@@ -164,7 +165,8 @@ function Editor({project,post,busy,dirty,setDirty,mutate,notify}:{project:Projec
       </form>
       <aside className="editor-aside">
         <section className="panel preview-panel"><p className="eyebrow">PREVIEW · {CHANNEL_LABELS[form.channel]}</p><div className="preview-identity"><Mark project={project}/><div><strong>{project.name}</strong><span>제품 기준 미리보기</span></div></div>
-          {(form.image||(post?.format==='image'&&post.assetId))&&<img className="upload-preview" src={form.image||`/api/assets/${post!.assetId}`} alt="첨부 이미지 미리보기"/>}
+          {form.image?.startsWith('data:video/')?<video className="upload-preview" controls preload="metadata" src={form.image}/>:(form.image||(post?.format==='image'&&post.assetId))?<img className="upload-preview" src={form.image||`/api/assets/${post!.assetId}`} alt="첨부 이미지 미리보기"/>:post?.format==='video'&&post.assetId?<video className="upload-preview" controls preload="metadata" src={`/api/assets/${post.assetId}`}/>:null}
+          {(form.image?.startsWith('data:video/')||(!form.image&&post?.format==='video'))&&form.channel!=='instagram'&&<div className="preview-media"><FileText size={22}/><span>영상 직접 게시는 Instagram만 지원해요. 다른 채널은 원본을 내려받아 게시해 주세요.</span></div>}
           <p className={`preview-copy ${!form.caption?'muted':''}`}>{form.caption||'작성한 문구가 여기에 표시돼요.'}</p>
           {form.channel==='instagram'&&!form.image&&!post?.assetId&&<div className="preview-media"><FileText size={22}/><span>Instagram 발행에는 미디어가 필요해요.</span></div>}
         </section>

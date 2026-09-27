@@ -1,15 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import type { DataSource, EntityManager } from 'typeorm';
 import type { Project, Post, PostInput, ProfileInput, Activity } from '@nullge/contracts';
-import { uploadedImage } from './uploaded-image';
+import { uploadedMedia, type UploadedMedia } from './uploaded-image';
 
 export class StoreError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
 }
 function normalized<T>(value: unknown): T { return JSON.parse(JSON.stringify(value)) as T; }
-async function imageContent(image?: string) {
+async function mediaContent(image?: string): Promise<UploadedMedia | undefined> {
   if (image === undefined) return undefined;
-  try { return await uploadedImage(image); }
+  try { return await uploadedMedia(image); }
   catch (error) { throw new StoreError(400, (error as Error).message); }
 }
 export class Store {
@@ -31,33 +31,33 @@ export class Store {
     await manager.query('INSERT INTO events (id,"workspaceId","projectId","actorId",action,title,"postId") VALUES ($1,$2,$3,$4,$5,$6,$7)', [randomUUID(),workspaceId,projectId,actorId,action,title,postId]);
   }
   async create(workspaceId: string, slug: string, actorId: string, input: PostInput): Promise<Post> {
-    const image = await imageContent(input.image);
+    const media = await mediaContent(input.image);
     return this.db.transaction(async manager => {
       const project = await this.project(workspaceId, slug, manager, true);
-      const assetId = image ? await this.saveImage(manager, workspaceId, project.id, image) : null;
-      const [post] = await manager.query(`INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",format,"assetId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`, [randomUUID(),workspaceId,project.id,input.title,input.caption,input.brief,input.channel,input.language,project.revision,assetId?'image':'text',assetId]);
+      const assetId = media ? await this.saveMedia(manager, workspaceId, project.id, media) : null;
+      const [post] = await manager.query(`INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",format,"assetId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`, [randomUUID(),workspaceId,project.id,input.title,input.caption,input.brief,input.channel,input.language,project.revision,media?media.format:'text',assetId]);
       await this.event(manager,workspaceId,project.id,actorId,'post_created',post.title,post.id);
       return normalized(post);
     });
   }
   async update(workspaceId: string, slug: string, id: string, actorId: string, input: PostInput & { revision: number }): Promise<Post> {
-    const image = await imageContent(input.image);
+    const media = await mediaContent(input.image);
     return this.db.transaction(async manager => {
       const project = await this.project(workspaceId,slug,manager,true);
-      const assetId = image ? await this.saveImage(manager, workspaceId, project.id, image) : null;
+      const assetId = media ? await this.saveMedia(manager, workspaceId, project.id, media) : null;
       const [post] = await manager.query(`WITH changed AS (UPDATE posts SET title=$5,caption=$6,brief=$7,channel=$8,language=$9,
         status='draft',"approvedAt"=NULL,"approvedBy"=NULL,"profileRevision"=$10,revision=revision+1,"updatedAt"=now(),
-        "assetId"=COALESCE($11::uuid,"assetId"),format=CASE WHEN $11::uuid IS NULL THEN format ELSE 'image' END
+        "assetId"=COALESCE($11::uuid,"assetId"),format=CASE WHEN $11::uuid IS NULL THEN format ELSE $12::text END
         WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3 AND revision=$4 AND "publishStatus" IS NULL RETURNING *) SELECT * FROM changed`,
-        [workspaceId,project.id,id,input.revision,input.title,input.caption,input.brief,input.channel,input.language,project.revision,assetId]);
+        [workspaceId,project.id,id,input.revision,input.title,input.caption,input.brief,input.channel,input.language,project.revision,assetId,media?media.format:null]);
       if (!post) throw new StoreError(409, '다른 화면에서 변경되었거나 이 제품의 콘텐츠가 아닙니다. 새로고침해 주세요.');
       await this.event(manager,workspaceId,project.id,actorId,'post_updated',post.title,post.id);
       return normalized(post);
     });
   }
-  private async saveImage(manager: EntityManager, workspaceId: string, projectId: string, content: Buffer) {
+  private async saveMedia(manager: EntityManager, workspaceId: string, projectId: string, media: UploadedMedia) {
     const id = randomUUID();
-    await manager.query(`INSERT INTO marketing_assets (id,"workspaceId","projectId",mime,content) VALUES ($1,$2,$3,'image/jpeg',$4)`, [id,workspaceId,projectId,content]);
+    await manager.query(`INSERT INTO marketing_assets (id,"workspaceId","projectId",mime,content) VALUES ($1,$2,$3,$4,$5)`, [id,workspaceId,projectId,media.mime,media.content]);
     return id;
   }
   async transition(workspaceId: string, slug: string, id: string, actorId: string, revision: number, action: 'review' | 'approve' | 'reopen'): Promise<Post> {
