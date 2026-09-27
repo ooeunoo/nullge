@@ -187,7 +187,7 @@ function ProductSettings({project,initialSection,children}:{project:Project;init
   return <div className="product-settings">
     <nav className="settings-nav" aria-label="설정 섹션">{sections.map(([id,label,description])=><a key={id} href={`#${id}`}><strong>{label}</strong><span>{description}</span></a>)}</nav>
     <section id="brand" className="settings-section" aria-labelledby="settings-brand-title"><div className="settings-section-title"><h2 id="settings-brand-title">브랜드</h2><p className="muted">저장하면 새 버전이 만들어지고, 바뀐 정보로 기존 콘텐츠를 다시 검토하게 돼요.</p></div>{children}</section>
-    <section id="channels" className="settings-section" aria-labelledby="settings-channels-title"><div className="settings-section-title"><h2 id="settings-channels-title">채널</h2><p className="muted">계정은 제품별로 따로 연결하고, 다른 제품과 공유하지 않아요.</p></div><ProductChannels project={project}/></section>
+    <section id="channels" className="settings-section" aria-labelledby="settings-channels-title"><div className="settings-section-title"><h2 id="settings-channels-title">채널</h2></div><ProductChannels project={project}/></section>
   </div>;
 }
 

@@ -272,20 +272,13 @@ export function ProductChannels({ project }: { project: Project }) {
     } catch (e) { setError(message(e)); }
     finally { setBusy(false); }
   }
+  const [manualChannel, setManualChannel] = useState<Channel>("threads");
+  const when = (value: string | null) => value ? new Date(value).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" }) : "—";
   return (
     <>
       <div className="section-title">
-        <div>
-          <h2>{project.name}의 SNS 계정</h2>
-          <p className="muted">
-            계정 접근을 확인한 뒤 암호화해서 저장해요. 다른 제품과 계정을
-            공유하지 않아요.
-          </p>
-        </div>
-        <a className="button" href="/settings">
-          <Settings size={16} />
-          공통 API 설정
-        </a>
+        <h2>{project.name}의 SNS 계정</h2>
+        <a className="text-button" href="/settings"><Settings size={14} />공통 API 설정</a>
       </div>
       {error && (
         <p role="alert" className="notice error">
@@ -297,122 +290,70 @@ export function ProductChannels({ project }: { project: Project }) {
           {notice}
         </p>
       )}
-      <div className="channel-grid">
-        {rows.map((c) => (
-          <section className="panel channel-card editor-form" key={c.channel}>
-            <span className="channel-symbol">
-              {c.channel === "x" ? "𝕏" : c.channel === "threads" ? "@" : "◎"}
-            </span>
-            <h3>{CHANNEL_LABELS[c.channel]}</h3>
-            <span className={`badge ${c.connected ? "approved" : "draft"}`}>
-              {c.connected ? "계정 연결됨" : "미연결"}
-            </span>
-            {c.connected && (
-              <>
-                <p>
-                  <strong>@{c.username}</strong>
-                </p>
-                <p className="field-hint">연결 방식: {c.provider === "buffer" ? "Buffer" : "직접 연결"}</p>
-                <p className="field-hint">
-                  확인:{" "}
-                  {c.verifiedAt &&
-                    new Date(c.verifiedAt).toLocaleString("ko-KR")}
-                  <br />
-                  {c.expiresAt
-                    ? `인증 만료: ${new Date(c.expiresAt).toLocaleString("ko-KR")}`
-                    : "만료일은 공급자에서 확인해 주세요."}
-                </p>
-                <button
-                  className="button"
-                  disabled={busy}
-                  onClick={() => void action(c, "verify")}
-                >
-                  연결 다시 확인
-                </button>
-                <button
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `${project.name}의 ${CHANNEL_LABELS[c.channel]} 연결을 해제할까요? 저장된 토큰이 삭제됩니다. 공급자 앱 권한은 해당 서비스에서 별도로 철회할 수 있어요.`,
-                      )
-                    )
-                      void action(c, "disconnect");
-                  }}
-                >
-                  연결 해제
-                </button>
-              </>
-            )}
-            {bufferChannels.some(channel => channel.service === c.channel) && <div className="integration-fields">
-              <label>
-                Buffer 채널
-                <select value={selectedBuffer[c.channel] || ""} disabled={busy}
-                  onChange={e => setSelectedBuffer({ ...selectedBuffer, [c.channel]: e.target.value })}>
-                  <option value="">선택</option>
-                  {bufferChannels.filter(channel => channel.service === c.channel).map(channel =>
-                    <option value={channel.id} key={channel.id}>{channel.name} · {channel.organizationName}</option>)}
-                </select>
-              </label>
-              <button className="button primary" disabled={busy || !selectedBuffer[c.channel]}
-                onClick={() => void connectBuffer(c)}>
-                Buffer 계정 {c.connected ? "교체" : "연결"}
-              </button>
-            </div>}
-            <button
-                className="button primary"
-                disabled={busy}
-                onClick={() => void action(c, "authorize")}
-              >
-                {CHANNEL_LABELS[c.channel]} 직접 {c.connected ? "다시 인증" : "계정 연결"}
-                <ArrowUpRight size={14} />
-              </button>
-            {c.channel !== "x" && (
-              <details>
-                <summary>기존 사용자 토큰으로 직접 연결</summary>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void action(c, "connect");
-                }}
-              >
-                <label>
-                  {c.channel === "instagram"
-                    ? "Instagram Login 사용자 Access Token"
-                    : "Threads 사용자 Access Token"}
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    maxLength={4096}
-                    value={tokens[c.channel] || ""}
-                    onChange={(e) =>
-                      setTokens({ ...tokens, [c.channel]: e.target.value })
-                    }
-                  />
-                </label>
-                <p className="field-hint">
-                  {c.channel === "instagram"
-                    ? "프로페셔널 계정과 instagram_business_basic · instagram_business_content_publish 권한이 필요해요."
-                    : "threads_basic · threads_content_publish 권한이 필요해요."}
-                </p>
-                <button
-                  className="button primary"
-                  disabled={busy || !tokens[c.channel]}
-                >
-                  계정 확인 후 {c.connected ? "교체" : "연결"}
-                </button>
-              </form>
-              </details>
-            )}
-          </section>
-        ))}
+      <div className="panel channel-panel">
+        <table className="channel-table">
+          <thead>
+            <tr><th scope="col">채널</th><th scope="col">상태</th><th scope="col">계정</th><th scope="col">연결 방식</th><th scope="col">인증 만료</th><th scope="col"><span className="visually-hidden">동작</span></th></tr>
+          </thead>
+          <tbody>
+            {rows.map((c) => {
+              const buffer = bufferChannels.filter(channel => channel.service === c.channel);
+              return (
+                <tr key={c.channel}>
+                  <td data-label="채널"><span className="channel-name"><span className="channel-symbol">{c.channel === "x" ? "𝕏" : c.channel === "threads" ? "@" : "◎"}</span>{CHANNEL_LABELS[c.channel]}</span></td>
+                  <td data-label="상태"><span className={`badge ${c.connected ? "approved" : "draft"}`}>{c.connected ? "연결됨" : "미연결"}</span></td>
+                  <td data-label="계정" className={c.connected ? undefined : "empty"}>{c.connected && c.username ? <strong>@{c.username}</strong> : <span className="muted">—</span>}</td>
+                  <td data-label="연결 방식" className={c.connected ? undefined : "empty"}>{c.connected ? (c.provider === "buffer" ? "Buffer" : "직접") : <span className="muted">—</span>}</td>
+                  <td data-label="인증 만료" className={c.connected ? undefined : "empty"}>{c.connected ? (c.expiresAt ? when(c.expiresAt) : <span className="muted">공급자 기준</span>) : <span className="muted">—</span>}</td>
+                  <td data-label="동작">
+                    <div className="channel-actions">
+                      <button className="button primary" disabled={busy} onClick={() => void action(c, "authorize")}>
+                        {c.connected ? "다시 인증" : "연결"}<ArrowUpRight size={14} />
+                      </button>
+                      {buffer.length > 0 && (
+                        <span className="channel-buffer">
+                          <select aria-label={`${CHANNEL_LABELS[c.channel]} Buffer 채널`} value={selectedBuffer[c.channel] || ""} disabled={busy}
+                            onChange={e => setSelectedBuffer({ ...selectedBuffer, [c.channel]: e.target.value })}>
+                            <option value="">Buffer 채널</option>
+                            {buffer.map(channel => <option value={channel.id} key={channel.id}>{channel.name} · {channel.organizationName}</option>)}
+                          </select>
+                          <button className="button" disabled={busy || !selectedBuffer[c.channel]} onClick={() => void connectBuffer(c)}>Buffer {c.connected ? "교체" : "연결"}</button>
+                        </span>
+                      )}
+                      {c.connected && (
+                        <>
+                          <button className="button" disabled={busy} onClick={() => void action(c, "verify")}>다시 확인</button>
+                          <button className="text-button danger-text" disabled={busy}
+                            onClick={() => { if (confirm(`${project.name}의 ${CHANNEL_LABELS[c.channel]} 연결을 해제할까요? 저장된 토큰이 삭제됩니다.`)) void action(c, "disconnect"); }}>
+                            해제
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-      <div className="inline-note">
-        연결은 게시 동의가 아니에요. 생성 결과를 검토하고 직접 게시해야 합니다.
-        Instagram·Threads는 로그인과 권한 동의 후 연결돼요. 계정 확인은 실제 게시 성공을 보장하지 않아요.
-      </div>
+      <details className="channel-manual">
+        <summary>사용자 토큰으로 직접 연결 (Threads · Instagram)</summary>
+        <form className="editor-form" onSubmit={(e) => { e.preventDefault(); const row = rows.find(r => r.channel === manualChannel); if (row) void action(row, "connect"); }}>
+          <div className="field-pair">
+            <label>채널
+              <select value={manualChannel} disabled={busy} onChange={e => setManualChannel(e.target.value as Channel)}>
+                <option value="threads">Threads</option><option value="instagram">Instagram</option>
+              </select>
+            </label>
+            <label>사용자 Access Token
+              <input type="password" autoComplete="new-password" required maxLength={4096} value={tokens[manualChannel] || ""}
+                onChange={(e) => setTokens({ ...tokens, [manualChannel]: e.target.value })} />
+            </label>
+          </div>
+          <button className="button primary" disabled={busy || !tokens[manualChannel]}>계정 확인 후 연결</button>
+        </form>
+      </details>
     </>
   );
 }
