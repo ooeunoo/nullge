@@ -232,7 +232,7 @@ export async function planContent(
     candidates: candidates.map(result => ({
       ...result,
       ...(history ? { visualConcept: input.format === "text" ? "" : result.visualConcept } : {}),
-      caption: result.caption + (input.format === "text" ? "" : input.language === "en" ? "\n\nAI-generated image/video." : "\n\nAI로 제작한 이미지·영상입니다."),
+      caption: result.caption,
       mediaPrompt: input.format === "text" ? "" : result.mediaPrompt,
     })),
     usage: response.usage || null,

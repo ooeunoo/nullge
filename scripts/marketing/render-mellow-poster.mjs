@@ -1,4 +1,4 @@
-// Render a mellow 4:5 Instagram poster: photo + headline (white/lime) + wordmark + AI note.
+// Render a mellow 4:5 Instagram poster: photo + headline (white/lime) + wordmark. No AI note: the operator decided (2026-09-27) that images and videos carry no disclosure text.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -17,10 +17,9 @@ p{margin:26px 0 0;font-size:38px;line-height:1.45;font-weight:500;color:rgba(249
 .foot{position:absolute;left:72px;right:72px;bottom:64px;display:flex;justify-content:space-between;align-items:flex-end;color:#f9f9f9}
 .logo{width:300px}.logo svg{width:100%;height:auto;display:block}
 .tag{margin-top:14px;font-size:26px;font-weight:600;color:rgba(249,249,249,.85)}
-.note{font-size:22px;color:rgba(249,249,249,.6)}
 </style><div class="bg"></div><div class="shade"></div>
 <div class="copy"><h1>${line1}<br><span class="lime">${line2}</span></h1><p>${sub}</p></div>
-<div class="foot"><div><div class="logo">${logo}</div><div class="tag">먼저 전화하는 AI 친구</div></div><div class="note">AI 모델로 연출한 이미지</div></div>`;
+<div class="foot"><div><div class="logo">${logo}</div><div class="tag">먼저 전화하는 AI 친구</div></div></div>`;
 const htmlPath = out.replace(/\.png$/, '.html');
 writeFileSync(htmlPath, html);
 execFileSync('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', ['--headless=new','--hide-scrollbars','--no-first-run','--disable-gpu',`--window-size=1080,1350`,`--screenshot=${out}`,`file://${htmlPath}`], { stdio: 'ignore' });
