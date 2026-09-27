@@ -134,7 +134,9 @@ export async function createBufferPost(apiKey: string, input: {
     true,
   );
   if (!data.createPost.post?.id) {
-    throw new StoreError(400, "Buffer가 게시 요청을 받지 않았습니다. 채널 상태와 콘텐츠 형식을 확인해 주세요.");
+    // Buffer's own reason (queue limit, media rules, channel state) is what the operator needs to act on.
+    const reason = data.createPost.message?.trim().slice(0, 300);
+    throw new StoreError(400, `Buffer가 게시 요청을 받지 않았습니다${reason ? `: ${reason}` : ". 채널 상태와 콘텐츠 형식을 확인해 주세요."}`);
   }
   return data.createPost.post as { id: string; status: string; externalLink?: string | null };
 }
