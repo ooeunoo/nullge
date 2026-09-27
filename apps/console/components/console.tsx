@@ -43,6 +43,12 @@ export function Console({ route }: { route: string[] }) {
     window.addEventListener('beforeunload',unload);
     return ()=>window.removeEventListener('beforeunload',unload);
   },[dirty]);
+  async function act(path: string,body: unknown,success: string) {
+    setBusy(true);setError('');setNotice('');
+    try {await api(path,body);await refresh();setNotice(success);}
+    catch(e) {setError(e instanceof Error?e.message:'요청을 처리하지 못했습니다.');}
+    finally {setBusy(false);}
+  }
   async function mutate<T>(path: string,body: unknown,method='POST'): Promise<T> {
     setBusy(true);setError('');setNotice('');
     try {const result=await api<T>(path,body,method);setDirty(false);await refresh();setNotice('저장했어요.');return result;}
@@ -80,7 +86,7 @@ export function Console({ route }: { route: string[] }) {
             {!editing && tab==='marketing' && <div className="heading-actions"><a className="button primary" href={`${projectPath(project)}/new`}><Plus size={17}/>콘텐츠 생성</a><a className="button" href={settingsPath(project)}><Settings size={17}/>설정</a></div>}
             {tab==='settings' && <a className="button" href={projectPath(project)}><ArrowLeft size={16}/>콘텐츠로 돌아가기</a>}
           </div>
-          {tab==='marketing' && (editing?post?<><Editor key={`${project.id}:${post.id}:${post.revision}`} project={project} post={post} busy={busy||!!post.publishStatus} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>{!dirty&&<PublishPanel project={project} post={post}/>}</>:<AutoCreator project={project} manual={<Editor project={project} busy={busy} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>}/>:<><PostList projects={[project]} posts={content} project={project}/><details className="history-details"><summary>자동 생성 작업 이력</summary><GenerationHistory project={project}/></details></>)}
+          {tab==='marketing' && (editing?post?<><Editor key={`${project.id}:${post.id}:${post.revision}`} project={project} post={post} busy={busy||!!post.publishStatus} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>{!dirty&&<PublishPanel project={project} post={post}/>}</>:<AutoCreator project={project} manual={<Editor project={project} busy={busy} dirty={dirty} setDirty={setDirty} mutate={mutate} notify={setNotice}/>}/>:<><PostList projects={[project]} posts={content} project={project} act={act} busy={busy}/><details className="history-details"><summary>자동 생성 작업 이력</summary><GenerationHistory project={project}/></details></>)}
           {tab==='settings' && <ProductSettings project={project} initialSection={legacySection}><Profile key={`${project.id}:${project.revision}:${project.profileReviewedAt}`} project={project} busy={busy} dirty={dirty} setDirty={setDirty} mutate={mutate}/></ProductSettings>}
         </>:isSettings?<SharedSettings/>:<Overview data={data}/>}
       </main><footer className="main-footer"><span>Nullge Console</span><span>표시 시간대 · 서울 (KST)</span></footer>
@@ -110,26 +116,42 @@ const FORMAT_LABELS:Record<string,string>={text:'글',image:'이미지',video:'�
 function ChannelMark({channel}:{channel:Post['channel']}) {
   return <span className={`channel-mark ${channel}`} aria-label={CHANNEL_LABELS[channel]} title={CHANNEL_LABELS[channel]}>{channel==='x'?'𝕏':channel==='threads'?'@':'◎'}</span>;
 }
-function PostCard({post,project}:{post:Post;project:Project}) {
+type Act=(path:string,body:unknown,success:string)=>Promise<void>;
+type ConnectionLite={channel:Post['channel'];connected:boolean;username:string|null;revision:number};
+function PostCard({post,project,connection,act,busy}:{post:Post;project:Project;connection?:ConnectionLite;act:Act;busy:boolean}) {
+  const [confirming,setConfirming]=useState(false);
   const format=post.format||'text';
   const media=format==='image'&&post.assetId?<img src={`/api/assets/${post.assetId}`} alt="" loading="lazy"/>
-    :format==='video'&&post.assetId?<><video src={`/api/assets/${post.assetId}#t=0.5`} muted playsInline preload="auto"/><span className="play-badge" aria-hidden="true">▶</span></>
+    :format==='video'&&post.assetId?<><video src={`/api/assets/${post.assetId}#t=0.2`} muted playsInline preload="auto"/><span className="play-badge" aria-hidden="true">▶</span></>
     :<div className={`text-card ${post.channel}`}><div className="text-card-head"><Mark project={project}/><strong>{project.name}</strong></div><p>{post.caption||'본문을 작성해 주세요.'}</p></div>;
-  return <a className={`post-card ${post.status}`} href={`${projectPath(project)}/${post.id}`}>
-    <div className={`post-media ${format}`}>{media}
-      <div className="post-media-top"><ChannelMark channel={post.channel}/><Badge status={post.status}/></div>
-      {post.publishStatus&&<span className={`publish-chip ${post.publishStatus}`}>{({queued:'게시 대기',creating:'게시 준비',processing:'게시 중',submitting:'게시 중',published:'게시됨',failed:'게시 실패',uncertain:'확인 필요'} as Record<string,string>)[post.publishStatus]}</span>}
-    </div>
-    <div className="post-card-body"><strong>{post.title}</strong><p>{format!=='text'&&(post.caption||'문구 없음')}</p><span className="post-meta">{FORMAT_LABELS[format]} · {CHANNEL_LABELS[post.channel]} · <time dateTime={post.updatedAt}>{date(post.updatedAt)}</time></span></div>
-  </a>;
+  const base=`projects/${project.slug}/posts/${post.id}`;
+  const publishState=post.publishStatus?({queued:'게시 대기',creating:'게시 준비',processing:'게시 중',submitting:'게시 중',published:'게시됨',failed:'게시 실패',uncertain:'확인 필요'} as Record<string,string>)[post.publishStatus]:null;
+  const actions=post.publishStatus?(post.publishedUrl?<a className="text-button" href={post.publishedUrl} target="_blank" rel="noreferrer">게시물 열기<ArrowUpRight size={13}/></a>:<span className="muted">{publishState}</span>)
+    :post.status==='draft'?<button className="button small" disabled={busy||!post.caption.trim()} onClick={()=>void act(`${base}/review`,{revision:post.revision},'검토 대기로 보냈어요.')}>검토 요청</button>
+    :post.status==='review'?<><button className="button small primary" disabled={busy||!project.profileReviewedAt} onClick={()=>void act(`${base}/approve`,{revision:post.revision},'검토를 완료했어요.')}><Check size={14}/>승인</button><button className="text-button" disabled={busy} onClick={()=>void act(`${base}/reopen`,{revision:post.revision},'초안으로 되돌렸어요.')}>초안으로</button></>
+    :!connection?.connected?<a className="text-button" href={settingsPath(project,'channels')}>채널 연결 후 게시<ArrowUpRight size={13}/></a>
+    :confirming?<div className="publish-inline"><span>@{connection.username}에 지금 게시할까요?</span><div><button className="button small primary" disabled={busy} onClick={()=>{setConfirming(false);void act(`${base}/publish`,{revision:post.revision,connectionRevision:connection.revision,confirmed:true},'게시를 요청했어요.');}}>게시 확정</button><button className="button small" disabled={busy} onClick={()=>setConfirming(false)}>취소</button></div></div>
+    :<><button className="button small primary" disabled={busy} onClick={()=>setConfirming(true)}><ArrowUpRight size={14}/>게시</button><button className="text-button" disabled={busy} onClick={()=>void act(`${base}/reopen`,{revision:post.revision},'초안으로 되돌렸어요.')}>초안으로</button></>;
+  return <article className={`post-card ${post.status}`}>
+    <a className="post-card-link" href={`${projectPath(project)}/${post.id}`}>
+      <div className={`post-media ${format}`}>{media}
+        <div className="post-media-top"><ChannelMark channel={post.channel}/><Badge status={post.status}/></div>
+        {publishState&&<span className={`publish-chip ${post.publishStatus}`}>{publishState}</span>}
+      </div>
+      <div className="post-card-body"><strong>{post.title}</strong><p>{format!=='text'&&(post.caption||'문구 없음')}</p><span className="post-meta">{FORMAT_LABELS[format]} · {CHANNEL_LABELS[post.channel]} · <time dateTime={post.updatedAt}>{date(post.updatedAt)}</time></span></div>
+    </a>
+    <div className="post-actions">{actions}</div>
+  </article>;
 }
-function PostList({posts,projects,project}:{posts:Post[];projects:Project[];project:Project}) {
+function PostList({posts,projects,project,act,busy}:{posts:Post[];projects:Project[];project:Project;act:Act;busy:boolean}) {
   const [query,setQuery]=useState('');const [status,setStatus]=useState('all');const [channel,setChannel]=useState('all');
+  const [connections,setConnections]=useState<ConnectionLite[]>([]);
+  useEffect(()=>{api<ConnectionLite[]>(`projects/${project.slug}/channels`).then(setConnections).catch(()=>setConnections([]));},[project.slug,posts.length]);
   const visible=posts.filter(p=>(status==='all'||p.status===status)&&(channel==='all'||p.channel===channel)&&`${p.title} ${p.caption}`.toLowerCase().includes(query.toLowerCase()));
   return <><div className="content-toolbar"><div className="status-filters" aria-label="콘텐츠 상태">{[['all','전체'],['draft','초안'],['review','검토 대기'],['approved','검토 완료']].map(([s,label])=><button className={s===status?'selected':''} key={s} onClick={()=>setStatus(s)} aria-pressed={s===status}>{label}<span>{s==='all'?posts.length:posts.filter(p=>p.status===s).length}</span></button>)}</div>
       <div className="toolbar-right"><div className="status-filters channel-filters" aria-label="채널">{[['all','모든 채널'],['instagram','Instagram'],['threads','Threads'],['x','X']].map(([c,label])=><button className={c===channel?'selected':''} key={c} onClick={()=>setChannel(c)} aria-pressed={c===channel}>{label}</button>)}</div><label className="search-field"><Search size={16}/><input aria-label="콘텐츠 검색" placeholder="콘텐츠 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label></div></div>
     {!project.profileReviewedAt&&<div className="inline-note"><CircleHelp size={17}/><span>제품 정보를 확인하면 콘텐츠 검토를 완료할 수 있어요.</span><a href={settingsPath(project,'brand')}>정보 확인<ChevronRight size={15}/></a></div>}
-    {visible.length?<div className="post-grid">{visible.map(post=><PostCard key={post.id} post={post} project={project}/>)}</div>:<section className="panel"><Empty title={query||status!=='all'||channel!=='all'?'조건에 맞는 콘텐츠가 없어요.':'첫 이야기를 만들어 볼까요?'}><p>{query||status!=='all'||channel!=='all'?'검색어나 필터를 바꿔 보세요.':`${project.name}의 기능이나 활용 장면을 짧은 글로 시작해 보세요.`}</p>{!query&&status==='all'&&channel==='all'&&<a className="button" href={`${projectPath(project)}/new`}><Plus size={16}/>첫 콘텐츠 작성</a>}</Empty></section>}
+    {visible.length?<div className="post-grid">{visible.map(post=><PostCard key={post.id} post={post} project={project} connection={connections.find(c=>c.channel===post.channel)} act={act} busy={busy}/>)}</div>:<section className="panel"><Empty title={query||status!=='all'||channel!=='all'?'조건에 맞는 콘텐츠가 없어요.':'첫 이야기를 만들어 볼까요?'}><p>{query||status!=='all'||channel!=='all'?'검색어나 필터를 바꿔 보세요.':`${project.name}의 기능이나 활용 장면을 짧은 글로 시작해 보세요.`}</p>{!query&&status==='all'&&channel==='all'&&<a className="button" href={`${projectPath(project)}/new`}><Plus size={16}/>첫 콘텐츠 작성</a>}</Empty></section>}
   </>;
 }
 
