@@ -44,8 +44,7 @@ it('preserves an existing attachment when editing only the caption, and invalida
   const edited=await store.update(WORKSPACE_ID,'mellow',post.id,actor,{...text,caption:'수정',revision:post.revision});
   expect(edited.assetId).toBe(post.assetId);
   const project=await store.project(WORKSPACE_ID,'mellow');await store.reviewProfile(WORKSPACE_ID,'mellow',actor,project.revision);
-  const review=await store.transition(WORKSPACE_ID,'mellow',post.id,actor,edited.revision,'review');
-  const approved=await store.transition(WORKSPACE_ID,'mellow',post.id,actor,review.revision,'approve');
+  const approved=await store.transition(WORKSPACE_ID,'mellow',post.id,actor,edited.revision,'approve');
   const replaced=await store.update(WORKSPACE_ID,'mellow',post.id,actor,{...input,revision:approved.revision});
   expect(replaced.assetId).not.toBe(post.assetId);expect(replaced).toMatchObject({status:'draft',approvedAt:null});
   expect((await db.query('SELECT * FROM marketing_assets WHERE id=$1',[post.assetId]))).toHaveLength(1);

@@ -45,7 +45,7 @@ describe('product boundaries and review workflow',()=>{
   it('rejects cross-product updates and approvals',async()=>{
     const post=await store.create(WORKSPACE_ID,'mellow',actor,input);
     await expect(store.update(WORKSPACE_ID,'clipit',post.id,actor,{...input,revision:post.revision})).rejects.toMatchObject({status:409});
-    await expect(store.transition(WORKSPACE_ID,'clipit',post.id,actor,post.revision,'review')).rejects.toMatchObject({status:409});
+    await expect(store.transition(WORKSPACE_ID,'clipit',post.id,actor,post.revision,'approve')).rejects.toMatchObject({status:409});
     await expect(store.create(randomUUID(),'mellow',actor,input)).rejects.toMatchObject({status:404});
   });
   it('allows only one write for a revision under concurrent edits',async()=>{
@@ -59,19 +59,17 @@ describe('product boundaries and review workflow',()=>{
   });
   it('requires reviewed product facts before approving a post',async()=>{
     const post=await store.create(WORKSPACE_ID,'mellow',actor,input);
-    const reviewed=await store.transition(WORKSPACE_ID,'mellow',post.id,actor,post.revision,'review');
-    await expect(store.transition(WORKSPACE_ID,'mellow',post.id,actor,reviewed.revision,'approve')).rejects.toMatchObject({status:400});
+    await expect(store.transition(WORKSPACE_ID,'mellow',post.id,actor,post.revision,'approve')).rejects.toMatchObject({status:400});
     const project=await store.project(WORKSPACE_ID,'mellow');
     await store.reviewProfile(WORKSPACE_ID,'mellow',actor,project.revision);
-    const approved=await store.transition(WORKSPACE_ID,'mellow',post.id,actor,reviewed.revision,'approve');
+    const approved=await store.transition(WORKSPACE_ID,'mellow',post.id,actor,post.revision,'approve');
     expect(approved.status).toBe('approved');expect(approved.approvedAt).not.toBeNull();
     const edited=await store.update(WORKSPACE_ID,'mellow',post.id,actor,{...input,caption:'수정된 문구',revision:approved.revision});
     expect(edited.status).toBe('draft');expect(edited.approvedAt).toBeNull();
   });
   it('invalidates review on profile edits and preserves immutable older versions',async()=>{
     const post=await store.create(WORKSPACE_ID,'mellow',actor,input);
-    const review=await store.transition(WORKSPACE_ID,'mellow',post.id,actor,post.revision,'review');
-    await store.transition(WORKSPACE_ID,'mellow',post.id,actor,review.revision,'approve');
+    await store.transition(WORKSPACE_ID,'mellow',post.id,actor,post.revision,'approve');
     const old=await store.project(WORKSPACE_ID,'mellow');
     const next=await store.updateProfile(WORKSPACE_ID,'mellow',actor,{revision:old.revision,description:'새 제품 설명',audience:old.audience,facts:old.facts,tone:old.tone,avoid:old.avoid,website:old.website});
     expect(next.revision).toBe(old.revision+1);expect(next.profileReviewedAt).toBeNull();
@@ -80,8 +78,7 @@ describe('product boundaries and review workflow',()=>{
     const [version]=await db.query('SELECT snapshot FROM profile_versions WHERE "projectId"=$1 AND revision=$2',[old.id,old.revision]);
     expect(version.snapshot.description).toBe(old.description);
     await store.reviewProfile(WORKSPACE_ID,'mellow',actor,next.revision);
-    const pending=await store.transition(WORKSPACE_ID,'mellow',post.id,actor,current.revision,'review');
-    await expect(store.transition(WORKSPACE_ID,'mellow',post.id,actor,pending.revision,'approve')).rejects.toMatchObject({status:400});
+    await expect(store.transition(WORKSPACE_ID,'mellow',post.id,actor,current.revision,'approve')).rejects.toMatchObject({status:400});
   });
   it('does not replace edited project data on repeated development seed',async()=>{
     const before=await store.project(WORKSPACE_ID,'mellow');

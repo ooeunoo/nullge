@@ -215,7 +215,7 @@ describe("shared integrations and protected marketing workflow", () => {
     const post = (await store.dashboard(WORKSPACE_ID)).posts.find(
       (p) => p.id === j.postId,
     )!;
-    expect(post.status).toBe("review");
+    expect(post.status).toBe("draft");
     expect(post.approvedAt).toBeNull();
     expect(post.publishStatus).toBeNull();
     expect(post.channel).toBe("threads");
@@ -301,20 +301,12 @@ describe("shared integrations and protected marketing workflow", () => {
       publisher.enqueue(WORKSPACE_ID, "mellow", post.id, actor, 1, 1),
     ).rejects.toMatchObject({ status: 400 });
     await store.reviewProfile(WORKSPACE_ID, "mellow", actor, p.revision);
-    const review = await store.transition(
-      WORKSPACE_ID,
-      "mellow",
-      post.id,
-      actor,
-      1,
-      "review",
-    );
     const approved = await store.transition(
       WORKSPACE_ID,
       "mellow",
       post.id,
       actor,
-      review.revision,
+      1,
       "approve",
     );
     await publisher.enqueue(
@@ -381,20 +373,12 @@ describe("shared integrations and protected marketing workflow", () => {
       channel: "threads",
       language: "ko",
     });
-    const r = await store.transition(
-      WORKSPACE_ID,
-      "mellow",
-      post.id,
-      actor,
-      1,
-      "review",
-    );
     const a = await store.transition(
       WORKSPACE_ID,
       "mellow",
       post.id,
       actor,
-      r.revision,
+      1,
       "approve",
     );
     await expect(

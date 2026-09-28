@@ -8,7 +8,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const read = request.method==='GET' || request.method==='HEAD';
   const allowed = read ? /^(dashboard|settings\/(integrations|buffer\/channels)|channels\/(x|threads|instagram)\/callback|(public-assets|assets)\/[a-f0-9-]{36}|projects\/[a-z0-9-]+\/(channels|generations)|auth\/(options|google|google\/callback))$/.test(route)
     : request.method==='PATCH' ? /^(settings\/integrations|projects\/[a-z0-9-]+\/(profile|posts\/[a-f0-9-]{36}))$/.test(route)
-    : /^(settings\/integrations\/verify|auth\/(local|logout)|projects\/[a-z0-9-]+\/(channels\/(x|threads|instagram)\/(connect|disconnect|verify|authorize|buffer)|generations\/(quote|confirm)|posts|profile\/review|posts\/[a-f0-9-]{36}\/(review|approve|reopen|publish|delete)))$/.test(route);
+    : /^(settings\/integrations\/verify|auth\/(local|logout)|projects\/[a-z0-9-]+\/(channels\/(x|threads|instagram)\/(connect|disconnect|verify|authorize|buffer)|generations\/(quote|confirm)|posts|profile\/review|posts\/[a-f0-9-]{36}\/(approve|reopen|publish|published|delete)))$/.test(route);
   const headers = new Headers({ 'Cache-Control':'private, no-store' });
   const fail = (message: string,status: number) => Response.json({ message },{ status,headers });
   if (!allowed) return fail('요청 경로를 찾을 수 없습니다.',404);

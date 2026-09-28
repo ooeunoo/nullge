@@ -168,7 +168,7 @@ export class MarketingWorker {
           ],
         );
       await m.query(
-        `INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",status,format,"assetId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'review',$10,$11)`,
+        `INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",status,format,"assetId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'draft',$10,$11)`,
         [
           id,
           j.workspaceId,

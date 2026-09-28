@@ -19,6 +19,8 @@ export const postInput = z.object({
 }).strict();
 export const postUpdate = postInput.extend({ revision: z.number().int().positive() });
 export const revisionInput = z.object({ revision: z.number().int().positive() }).strict();
+/** Records a post that the operator published outside the console (web UI, app), so the console stops treating it as unpublished. */
+export const externalPublication = z.object({ revision: z.number().int().positive(), url: z.string().url().max(500).refine(u => /^https:\/\/(www\.)?(instagram\.com|threads\.(com|net)|x\.com|twitter\.com)\//.test(u), '게시물 주소는 Instagram·Threads·X 링크여야 합니다.') }).strict();
 export const profileInput = z.object({
   revision: z.number().int().positive(),
   description: z.string().trim().min(1).max(1000),
@@ -31,7 +33,7 @@ export const profileInput = z.object({
 export type Channel = z.infer<typeof channelSchema>;
 export type PostInput = z.infer<typeof postInput>;
 export type ProfileInput = z.infer<typeof profileInput>;
-export type PostStatus = 'draft' | 'review' | 'approved';
+export type PostStatus = 'draft' | 'approved';
 export interface Project {
   id: string;
   slug: string;
@@ -78,7 +80,7 @@ export interface Dashboard {
 }
 export interface AuthOptions { local: boolean; google: boolean; }
 export const CHANNEL_LABELS: Record<Channel, string> = { x: 'X', threads: 'Threads', instagram: 'Instagram' };
-export const STATUS_LABELS: Record<PostStatus, string> = { draft: '초안', review: '검토 대기', approved: '검토 완료' };
+export const STATUS_LABELS: Record<PostStatus, string> = { draft: '초안', approved: '승인됨' };
 
 export const secretFields = ['openaiKey','higgsfieldKey','higgsfieldSecret','bufferApiKey','xClientId','xClientSecret','instagramClientId','instagramClientSecret','threadsClientId','threadsClientSecret'] as const;
 export type SecretField = typeof secretFields[number];

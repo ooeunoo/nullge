@@ -53,3 +53,19 @@ it('rejects deletion from another product, a stale revision, or after a publish 
   await store.remove(WORKSPACE_ID,'mellow',post.id,actor,post.revision);
   await expect(store.remove(WORKSPACE_ID,'mellow',post.id,actor,post.revision)).rejects.toMatchObject({status:409});
 });
+
+it('records an external publication and lets a Buffer-rejected post be deleted',async()=>{
+  const post=await store.create(WORKSPACE_ID,'mellow',actor,text);
+  const project=await store.project(WORKSPACE_ID,'mellow');
+  const published=await store.recordPublication(WORKSPACE_ID,'mellow',post.id,actor,post.revision,'https://x.com/mellow_call/status/1');
+  expect(published).toMatchObject({status:'approved',publishStatus:'published',publishedUrl:'https://x.com/mellow_call/status/1',revision:post.revision+1});
+  expect(published.approvedAt).not.toBeNull();
+  await expect(store.remove(WORKSPACE_ID,'mellow',post.id,actor,published.revision)).rejects.toMatchObject({status:409});
+  await expect(store.recordPublication(WORKSPACE_ID,'mellow',post.id,actor,published.revision,'https://x.com/mellow_call/status/2')).rejects.toMatchObject({status:409});
+  const failed=await store.create(WORKSPACE_ID,'mellow',actor,text);
+  await db.query(`UPDATE posts SET "publishStatus"='failed',"publishError"='rejected' WHERE id=$1`,[failed.id]);
+  await db.query('INSERT INTO publication_jobs (id,"workspaceId","projectId","postId","actorId","connectionRevision",snapshot,status) VALUES ($1,$2,$3,$4,$5,1,$6,$7)',[randomUUID(),WORKSPACE_ID,project.id,failed.id,actor,'{}','failed']);
+  expect(await store.remove(WORKSPACE_ID,'mellow',failed.id,actor,failed.revision)).toEqual({id:failed.id});
+  expect(await db.query('SELECT 1 FROM publication_jobs WHERE "postId"=$1',[failed.id])).toHaveLength(0);
+  expect((await store.dashboard(WORKSPACE_ID)).activities.map(a=>a.action)).toContain('post_published_externally');
+});

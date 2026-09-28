@@ -59,8 +59,7 @@ describe("Buffer channel mapping and publishing", () => {
       title: '이미지 API 테스트', caption: '업로드한 이미지', brief: '', channel: 'instagram', language: 'ko',
       image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAD0lEQVQYlWNgaCAAR4YCAOLoQAEz6be5AAAAAElFTkSuQmCC',
     });
-    const review = await store.transition(WORKSPACE_ID, 'mellow', draft.id, actor, draft.revision, 'review');
-    const approved = await store.transition(WORKSPACE_ID, 'mellow', draft.id, actor, review.revision, 'approve');
+    const approved = await store.transition(WORKSPACE_ID, 'mellow', draft.id, actor, draft.revision, 'approve');
     await publisher.enqueue(WORKSPACE_ID, 'mellow', draft.id, actor, approved.revision, 1);
     const fetch = vi.fn().mockResolvedValue(json({ data: { createPost: { post: { id: 'image-post-1', status: 'sending' } } } }));
     vi.stubGlobal('fetch', fetch);
@@ -118,8 +117,7 @@ describe("Buffer channel mapping and publishing", () => {
     const draft = await store.create(WORKSPACE_ID, "mellow", actor, {
       title: "Buffer 게시 테스트", caption: "검토된 콘텐츠입니다.", brief: "", channel: "threads", language: "ko",
     });
-    const review = await store.transition(WORKSPACE_ID, "mellow", draft.id, actor, draft.revision, "review");
-    const approved = await store.transition(WORKSPACE_ID, "mellow", draft.id, actor, review.revision, "approve");
+    const approved = await store.transition(WORKSPACE_ID, "mellow", draft.id, actor, draft.revision, "approve");
     await publisher.enqueue(WORKSPACE_ID, "mellow", draft.id, actor, approved.revision, 1);
 
     const fetch = vi.fn()

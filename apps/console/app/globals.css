@@ -131,7 +131,6 @@ h1 { font-size: 30px; line-height: 1.4; letter-spacing: -.045em; }
 .post-title p { margin: 3px 0 0; font-size: 13px; color: #839083; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .channel-label { font-size: 13px; }
 .badge { display: inline-flex; width: fit-content; padding: 3px 9px; border-radius: 5px; font-size: 12px; white-space: nowrap; background: #eef1ee; color: #627062; }
-.badge.review { background: #fff3dc; color: #896315; }
 .badge.approved { background: #e7f4e7; color: #38723a; }
 .ready-label { color: #377339; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
 .back-link { display: inline-flex; gap: 8px; align-items: center; color: #6f7c6f; font-size: 14px; margin-bottom: 22px; }
@@ -329,3 +328,8 @@ h1 { font-size: 30px; line-height: 1.4; letter-spacing: -.045em; }
 .publish-inline { display: flex; flex-direction: column; gap: 8px; width: 100%; font-size: 13px; }
 .publish-inline > div { display: flex; gap: 6px; }
 @media(max-width:700px) { .post-actions { padding: 8px 11px 11px; } .button.small { padding: 6px 9px; font-size: 12px; } }
+
+.external-panel summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.external-panel p { font-size: 13px; margin: 10px 0 12px; }
+.external-panel form { display: flex; gap: 8px; align-items: center; }
+.external-panel form input { flex: 1; min-width: 0; font-size: 13px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }

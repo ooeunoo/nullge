@@ -4,7 +4,7 @@ import { BadRequestException, Body, Controller, Get, Inject, Module, Param, Pars
 import { json, type Request, type Response } from 'express';
 import { database, Store, StoreError, MarketingStore, MarketingPublisher } from '@nullge/database';
 import { MarketingController,PublicAssetController } from './marketing';
-import { postInput, postUpdate, profileInput, revisionInput,publishConfirm, POST_BODY_LIMIT } from '@nullge/contracts';
+import { postInput, postUpdate, profileInput, revisionInput,publishConfirm, externalPublication, POST_BODY_LIMIT } from '@nullge/contracts';
 import { AuthService, SessionGuard, origin, localMode, type AuthenticatedRequest } from './auth';
 
 function parse<T>(schema: { safeParse(input: unknown): { success:true; data:T } | { success:false } }, input: unknown): T {
@@ -37,7 +37,8 @@ class ConsoleController {
   @Post('projects/:slug/posts/:id/:action') transition(@Req() r: AuthenticatedRequest,@Param('slug') slug: string,@Param('id',new ParseUUIDPipe()) id: string,@Param('action') action: string,@Body() body: unknown) {
     if(action==='publish'){const input=parse(publishConfirm,body);return this.publisher.enqueue(r.operator.workspaceId,slug,id,r.operator.id,input.revision,input.connectionRevision);}
     if(action==='delete')return this.store.remove(r.operator.workspaceId,slug,id,r.operator.id,parse(revisionInput,body).revision);
-    if (action!=='review' && action!=='approve' && action!=='reopen') throw new BadRequestException('지원하지 않는 작업입니다.');
+    if(action==='published'){const input=parse(externalPublication,body);return this.store.recordPublication(r.operator.workspaceId,slug,id,r.operator.id,input.revision,input.url);}
+    if (action!=='approve' && action!=='reopen') throw new BadRequestException('지원하지 않는 작업입니다.');
     return this.store.transition(r.operator.workspaceId,slug,id,r.operator.id,parse(revisionInput,body).revision,action);
   }
   @Patch('projects/:slug/profile') profile(@Req() r: AuthenticatedRequest,@Param('slug') slug: string,@Body() body: unknown) {

@@ -87,7 +87,7 @@ describe("one-click generation with product memory", () => {
     expect(finished.result.title).toBe(candidates[1].title);
     expect(finished.result.historyIds).toEqual([previous.id]);
     const [post] = await db.query("SELECT * FROM posts WHERE id=$1", [finished.postId]);
-    expect(post).toMatchObject({ status: "review", publishStatus: null, approvedAt: null, brief: "" });
+    expect(post).toMatchObject({ status: "draft", publishStatus: null, approvedAt: null, brief: "" });
     expect((await marketing.jobs(WORKSPACE_ID, "mellow"))[0].title).toBe(candidates[1].title);
     expect(fake).toHaveBeenCalledTimes(1);
   });
