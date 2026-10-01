@@ -5,7 +5,7 @@ import { database, WORKSPACE_ID } from '@nullge/database';
 import { ProductProfiles1790352000000 } from '../packages/database/src/product-profiles-migration';
 import { legacyInitialProducts } from '../packages/database/src/seed';
 import { productCatalog20260925 } from '../packages/database/src/product-catalog-20260925';
-import { productBrands } from '../apps/console/components/product-brands';
+import { productBrands } from '../apps/console/lib/product-brands';
 import { MinimoRepositoryCorrection1790352300000 } from '../packages/database/src/minimo-correction-migration';
 import { currentProductCatalog, minimoDesktopPet } from '../packages/database/src/minimo-desktop-pet';
 
