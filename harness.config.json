@@ -1,0 +1,76 @@
+{
+  "harnessVersion": "0.1.0",
+  "service": {
+    "name": "nullge",
+    "slug": "nullge",
+    "version": "0.1.0"
+  },
+  "accountEmail": "seongeun.cho.dev@gmail.com",
+  "github": {
+    "owner": "ooeunoo",
+    "visibility": "private",
+    "repository": "nullge",
+    "pushPerFeature": true
+  },
+  "apps": [
+    "web",
+    "server",
+    "worker"
+  ],
+  "mobile": {
+    "applicationId": "com.nullge.nullge",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "separateDevelopmentId": false,
+    "forceUpdate": true,
+    "buildProvider": "eas-local",
+    "versionSource": "remote",
+    "autoIncrement": true
+  },
+  "billing": {
+    "web": "none",
+    "mobile": "none"
+  },
+  "admin": {
+    "enabled": false,
+    "basePath": "/admin",
+    "setupOnce": true
+  },
+  "localization": {
+    "sourceLocale": "en",
+    "fallbackLocale": "en",
+    "target": "all-supported-launch-locales",
+    "inventory": "docs/harness/locales.json",
+    "localizeAppName": true
+  },
+  "credentials": {
+    "directory": ".credentials",
+    "encryption": "git-crypt",
+    "manifest": "docs/harness/credentials.manifest.json",
+    "keyNamePattern": "nullge-<slug>-<env>-<purpose>"
+  },
+  "telegram": {
+    "enabled": true,
+    "channelNamePattern": "(서비스명) 알림",
+    "events": []
+  },
+  "deployment": {
+    "provider": "railway",
+    "environments": [
+      "prod"
+    ],
+    "productionAutodeploy": false,
+    "projectId": "3c584db8-6a84-4244-851d-0a4911e42674",
+    "databaseEngine": "postgres"
+  },
+  "testing": {
+    "claudeWeb": "claude-in-chrome",
+    "codexWeb": "computer-use",
+    "ios": "webdriveragent",
+    "android": "appium-uiautomator2",
+    "temporaryArtifacts": "delete-after-feature",
+    "persistStoreAssets": true
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "phase": "adoption-refactor",
+  "serviceVersion": "0.1.0",
+  "activeFeature": "harness-adoption",
+  "completedFeatures": [],
+  "nextAction": "2단계(UI 파일 분리·테스트 위치·린터)를 기능별로 검증 후 진행; 3단계 전환 항목은 사용자 결정 대기",
+  "blockers": [
+    "저장소 public 유지 여부와 .credentials 암호화 커밋 방식 결정 필요",
+    "공개 사이트 Railway 전환·Pages 중지 시점 결정 필요"
+  ],
+  "lastVerifiedCommit": null,
+  "lastPushedCommit": null,
+  "updatedAt": "2026-10-01"
+}

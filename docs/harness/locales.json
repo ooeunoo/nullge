@@ -1,0 +1,23 @@
+{
+  "sourceLocale": "en",
+  "fallbackLocale": "en",
+  "targetCountries": [],
+  "locales": [
+    {
+      "locale": "en",
+      "status": "planned",
+      "enabled": false,
+      "appName": null,
+      "iosStoreLocale": "en-US",
+      "androidStoreLocale": "en-US"
+    }
+  ],
+  "coverage": {
+    "app": false,
+    "web": false,
+    "admin": false,
+    "notifications": false,
+    "storeMetadata": false,
+    "storeScreenshots": false
+  }
+}

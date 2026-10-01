@@ -1,0 +1,42 @@
+{
+  "observed": {
+    "name": "nullge",
+    "slug": "nullge",
+    "version": "0.1.0",
+    "versionOrigin": "explicit CLI value",
+    "applicationId": null,
+    "apps": [
+      "web",
+      "server",
+      "worker"
+    ],
+    "separateDevelopmentId": false,
+    "packageManager": "pnpm@10.33.2",
+    "notes": [
+      "apps/site(정적 공개 사이트)+apps/console(Next.js 16)=web, apps/api(NestJS)=server, apps/worker=worker; 모바일 앱 없음",
+      "root package.json에 version 없음; 서비스 버전 0.1.0은 CLI 입력값이며 출시 태그 없음",
+      "2026-10-01 adopt.py가 apps를 worker로만 감지한 것을 실제 구조로 정정"
+    ]
+  },
+  "platformsVerified": false,
+  "existingImplementationPreserved": true,
+  "reviewRequired": [
+    "platform IDs/actual accounts and billing state",
+    "existing instructions versus harness targets",
+    "Git ignore/encryption and temporary artifact cleanup",
+    "dev/verify/release command mapping and native cache reuse",
+    "English/i18n coverage and existing user locale behavior"
+  ],
+  "refactoringPolicy": "non-production-changing feature-sized steps; see policies/adoption.md",
+  "warnings": [
+    "Policy defaults are targets, not verified existing platform settings"
+  ],
+  "verified": {
+    "github": "2026-10-01 CLI",
+    "railway": "2026-10-01 CLI",
+    "apple": null,
+    "google": null,
+    "expo": null,
+    "telegram": null
+  }
+}

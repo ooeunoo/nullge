@@ -1,0 +1,68 @@
+{
+  "expectedAccountEmail": "seongeun.cho.dev@gmail.com",
+  "github": {
+    "owner": "ooeunoo",
+    "repository": "nullge"
+  },
+  "apple": {
+    "teamId": null,
+    "appId": null,
+    "bundleId": null
+  },
+  "google": {
+    "projectId": null,
+    "developerId": null,
+    "packageName": null
+  },
+  "expo": {
+    "owner": null,
+    "projectId": null
+  },
+  "railway": {
+    "workspaceId": null,
+    "projectId": "3c584db8-6a84-4244-851d-0a4911e42674",
+    "environments": {
+      "production": "b2d1563a-4efb-4a28-ac95-60d714b68199"
+    },
+    "services": {
+      "web": "0f890f98-b599-4bb0-8e9b-5020e7d9b072",
+      "api": "36a76282-d0d3-481b-9600-77005f08a9dd",
+      "console": "78c7c5c6-91ea-4b9d-9bc5-edfec4493fc8",
+      "worker": "b886a408-67dd-43bb-810a-ad817f1b8c5a",
+      "postgres": "a1bd16a6-e015-4a49-990e-f21014a178c3"
+    }
+  },
+  "revenuecat": {
+    "projectId": null,
+    "appIds": {}
+  },
+  "paddle": {
+    "environments": {}
+  },
+  "telegram": {
+    "botUsername": null,
+    "channelId": null
+  },
+  "verification": {
+    "github": {
+      "checkedAt": "2026-10-01",
+      "method": "gh auth status / gh repo view",
+      "account": "ooeunoo",
+      "visibility": "public",
+      "note": "하네스 기본값(private)과 다름; 전환 항목"
+    },
+    "railway": {
+      "checkedAt": "2026-10-01",
+      "method": "railway whoami / railway status --json",
+      "account": "seongeun.cho.dev@gmail.com",
+      "githubAutodeploy": false,
+      "note": "서비스 source 없음; 배포는 railway up 수동"
+    },
+    "githubPages": {
+      "checkedAt": "2026-10-01",
+      "method": "gh api repos/ooeunoo/nullge/pages, dig",
+      "cname": "www.nullge.com",
+      "note": "main push마다 .github/workflows/pages.yml이 공개 사이트를 배포함"
+    }
+  }
+}
