@@ -10,3 +10,6 @@ dist/
 coverage/
 *.tsbuildinfo
 !.env.example
+
+# Private harness clone (ooeunoo/harness, pinned by harness.lock.json); restored locally with `harness adopt --apply`, never published from this public repo.
+.harness/

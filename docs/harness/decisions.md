@@ -11,6 +11,7 @@
 | 2026-10-01 | 자격 증명 | Railway 변수만 사용, `.credentials/` 미사용 | 저장소가 public | `.gitignore`, `docs/harness/credentials.manifest.json` |
 | 2026-10-01 | 언어 | 한국어 단일 유지 | 내부 도구·국내 회사 사이트; 다국어는 별도 기능 | `docs/harness/locales.json`(목표만 기록) |
 | 2026-10-01 | 버전 | 출시 버전·태그 미운영; `0.1.0`은 자리값 | 이미 운영 중인 서비스의 첫 버전 결정 필요 | `harness.config.json service.version` |
+| 2026-10-01 | 하네스 보관 | `.harness/`는 Git 추적 제외(private 하네스를 public 저장소에 싣지 않음), 스킬 링크만 추적 | 첫 커밋에서 gitlink로 들어간 것을 정정 | `.gitignore`, `AGENTS.md` |
 | 2026-10-01 | 스키마 제약 | `mobile`·`telegram.enabled=true` 블록은 스키마 필수라 남겨 두고 사용하지 않음 | 하네스 스키마가 조건부 블록을 허용하지 않음 | `harness.config.json` |
 
 계정·토큰의 비밀 값은 기록하지 않는다. 선택 앱, DB 엔진, locale 범위, 개발 식별자, 지원 버전, 자동 배포, 관리자 복구, 플랫폼 권한 등 프로젝트 결정만 추가한다.
