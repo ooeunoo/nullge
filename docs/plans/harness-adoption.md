@@ -44,7 +44,7 @@
 |---|---|---|---|
 | 저장소 공개 범위 | public | private | 공개 사이트 소스·외부 링크 영향, GitHub Pages는 private 저장소에서 유료 플랜 필요. 사용자 결정 |
 | 자격 증명 | Railway 변수만, `.credentials/` 미사용·ignore | git-crypt 암호화 커밋 | 저장소가 public인 동안은 암호화 파일도 커밋하지 않는 것이 안전. private 전환과 함께 결정 |
-| 공개 사이트 호스팅 | GitHub Pages(main 푸시 배포) | Railway `web` + 수동 배포 | `docs/marketing/09-operations.md`의 DNS 전환 절차. 전환 후 Pages 워크플로 중지 |
+| 공개 사이트 호스팅 | ~~GitHub Pages~~ → 2026-10-01 Railway `web`으로 전환 완료(사용자 지시) | Railway `web` + 수동 배포 | 캐시 만료 후 Pages 워크플로·사이트 제거 |
 | 서비스 버전·출시 기록 | 없음 | `1.0.0`부터 patch, `docs/releases/<v>.md`, 태그 | 첫 출시 버전을 무엇으로 볼지(이미 운영 중) 결정 후 태그 |
 | 언어 | 한국어 단일 | 영어 원본·다국어·`docs/harness/locales.json` | 내부 도구와 회사 사이트의 대상 언어 결정. 사용자 화면 변경이므로 기능 단위 |
 | Telegram 운영 알림 | 없음 | 서비스별 봇·채널 | 필요 이벤트 정의 후 nullge-telegram |

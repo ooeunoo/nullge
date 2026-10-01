@@ -101,3 +101,10 @@ Console 변경 완료: `console` CNAME → `fu280hho.up.railway.app`, `_railway-
 Railway Postgres → Backups에서 일간+주간 스케줄을 설정하고 스케줄 목록과 첫 완료 백업을 확인한다. 공식 기본 보존은 일간 6일·주간 27일이며 [Railway 백업 문서](https://docs.railway.com/volumes/backups)를 따른다. 설정되기 전 백업이 있다고 가정하고 중요한 데이터를 이관하지 않는다.
 
 스키마 변경/기존 데이터 이관 전 수동 백업을 만들고 상태를 확인한다. 복원은 운영 중 자동으로 실행하지 않는다. 대상·복원 시각·예상 손실 범위를 확인하고 API/Worker를 중지한 뒤 Railway의 복원 절차와 검증을 거친다. 이전 볼륨은 검증 완료 전 제거하지 않는다. 첫 운영 전에 복구 연습을 수행해야 한다.
+
+## 2026-10-01 — 공개 사이트 DNS를 Railway로 전환
+
+- Railway mellow 프로젝트 web 서비스에 남아 있던 `www.nullge.com` 커스텀 도메인만 삭제하고(다른 mellow 도메인·서비스는 그대로), nullge 프로젝트 `web` 서비스에 등록했다. Railway가 반환한 값: CNAME `oh27aktx.up.railway.app`, 검증 TXT `_railway-verify.www`.
+- GoDaddy: `www` CNAME을 `ooeunoo.github.io` → `oh27aktx.up.railway.app`로, 기존 `_railway-verify.www` TXT를 새 토큰으로 바꿨다. 루트는 "전달" 탭에서 `https://www.nullge.com` 영구(301, 마스킹 없음) 전달을 추가했고 GoDaddy가 GitHub A 레코드 4개를 자기 전달 IP로 교체했다.
+- 확인: 권한 네임서버 CNAME 반영, Railway 소유권 검증 `verified`·인증서 `VALID`, Railway IP로 직접 해석한 `https://www.nullge.com/` 200(`server: railway-hikari`, 내용 해시가 Pages와 동일 `b555c10139de`), `http(s)://nullge.com/` → 301 `https://www.nullge.com/`. 루트의 경로 포함 요청(`/a?b=1`)은 GoDaddy 전달에서 404로 응답한다(GitHub 시절에는 리디렉션). 사이트는 단일 페이지라 영향이 없지만 기록해 둔다.
+- 공개 리졸버 캐시(TTL 1시간)가 빠진 뒤 GitHub Pages 워크플로와 Pages 사이트를 제거한다.

@@ -30,6 +30,10 @@
       "console": "78c7c5c6-91ea-4b9d-9bc5-edfec4493fc8",
       "worker": "b886a408-67dd-43bb-810a-ad817f1b8c5a",
       "postgres": "a1bd16a6-e015-4a49-990e-f21014a178c3"
+    },
+    "domains": {
+      "web": "www.nullge.com",
+      "console": "console.nullge.com"
     }
   },
   "revenuecat": {
@@ -56,13 +60,13 @@
       "method": "railway whoami / railway status --json",
       "account": "seongeun.cho.dev@gmail.com",
       "githubAutodeploy": false,
-      "note": "서비스 source 없음; 배포는 railway up 수동"
+      "note": "서비스 source 없음; 배포는 railway up 수동. www.nullge.com 커스텀 도메인 검증·인증서 완료(2026-10-01)"
     },
     "githubPages": {
       "checkedAt": "2026-10-01",
       "method": "gh api repos/ooeunoo/nullge/pages, dig",
       "cname": "www.nullge.com",
-      "note": "main push마다 .github/workflows/pages.yml이 공개 사이트를 배포함"
+      "note": "2026-10-01 www CNAME을 Railway로 전환; Pages는 캐시 만료 후 제거 예정"
     }
   }
 }

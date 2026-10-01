@@ -12,6 +12,10 @@
 | 2026-10-01 | 언어 | 한국어 단일 유지 | 내부 도구·국내 회사 사이트; 다국어는 별도 기능 | `docs/harness/locales.json`(목표만 기록) |
 | 2026-10-01 | 버전 | 출시 버전·태그 미운영; `0.1.0`은 자리값 | 이미 운영 중인 서비스의 첫 버전 결정 필요 | `harness.config.json service.version` |
 | 2026-10-01 | 하네스 보관 | `.harness/`는 Git 추적 제외(private 하네스를 public 저장소에 싣지 않음), 스킬 링크만 추적 | 첫 커밋에서 gitlink로 들어간 것을 정정 | `.gitignore`, `AGENTS.md` |
+| 2026-10-01 | 테스트 위치 | 통합 테스트는 루트 `tests/` 유지(패키지 소스와 API를 함께 검증, 전용 로컬 DB 생성) | 하네스의 앱별 `test/`는 단일 앱 테스트 기준; 이 저장소는 패키지 경계 테스트가 중심 | `tests/`, `vitest` |
+| 2026-10-01 | 일회성 스크립트 | 경로 유지, `scripts/README.md`로 용도·상태 기록 | 문서가 기존 경로를 참조 | `scripts/README.md` |
+| 2026-10-01 | Docker 빌드 컨텍스트 | docs·tests·하네스·마케팅 스크립트를 이미지에서 제외 | 운영 이미지에 불필요, 컨텍스트 축소 | `.dockerignore` |
+| 2026-10-01 | 공개 사이트 호스팅 | `www.nullge.com`을 Railway `web`으로 전환, 루트는 GoDaddy 301 전달, GitHub Pages는 캐시 만료 후 제거 | 사용자 지시(2026-10-01) | `docs/marketing/09-operations.md`, `.github/workflows/pages.yml` |
 | 2026-10-01 | 스키마 제약 | `mobile`·`telegram.enabled=true` 블록은 스키마 필수라 남겨 두고 사용하지 않음 | 하네스 스키마가 조건부 블록을 허용하지 않음 | `harness.config.json` |
 
 계정·토큰의 비밀 값은 기록하지 않는다. 선택 앱, DB 엔진, locale 범위, 개발 식별자, 지원 버전, 자동 배포, 관리자 복구, 플랫폼 권한 등 프로젝트 결정만 추가한다.
