@@ -25,3 +25,14 @@
 
 - 첫 커밋이 `.harness/`를 gitlink(내장 저장소)로 추적했다. private 하네스를 public 저장소에 싣지 않도록 인덱스에서 제거하고 `.gitignore`에 추가했다. 스킬 링크(`.claude/skills`, `.agents/skills`)는 유지한다.
 - `harness.config.json`·`docs/harness/platforms.json`에 하네스 스키마가 고정한 계정 이메일이 들어가 public 저장소에 푸시됐다. 이 저장소의 기존 결정(운영자 이메일은 Railway 변수에만)과 충돌하므로 처리 방식은 사용자 결정 대기(그대로 둘지, 파일에서 빼고 스키마를 완화할지, 이력 정리까지 할지).
+
+## 2단계 2-1 — 콘솔 UI 파일 분리 (2026-10-01)
+
+| 검증 | 결과 |
+|---|---|
+| `pnpm typecheck`, `pnpm --filter @nullge/console build` | 통과 |
+| `make verify` | 통과(테스트 71건) |
+| 로컬 dev(127.0.0.1:4310, Claude in Chrome) | 로그인 → 전체 보기 → mellow 콘텐츠 목록 → 콘텐츠 편집 → 제품 설정 → 콘텐츠 생성 → 공통 API 설정 모두 렌더링, 브라우저 콘솔 오류 없음 |
+| 산출물 | 캡처는 도구 세션 안에서만 보고 저장하지 않음. dev 로그 삭제 |
+
+구조: `lib/api.ts`(api·경로·날짜), `lib/product-brands.ts`, `components/ui/{Mark,Badge,Empty,ChannelMark}.tsx`, `features/shell/{Console,Login}.tsx`, `features/overview/Overview.tsx`, `features/content/{PostCard,PostList,Editor}.tsx`·`types.ts`·`capture-poster.ts`, `features/settings/{ProductSettings,BrandReference,Profile}.tsx`, `features/marketing/{SharedSettings,ProductChannels,GenerationHistory,AutoCreator,GeneratedAsset,PublishPanel}.tsx`·`shared.ts`.

@@ -32,10 +32,10 @@
 
 | # | 변경 | 위험 | 검증 |
 |---|---|---|---|
-| 2-1 | UI 컴포넌트 파일을 PascalCase로 바꾸고 `console.tsx`(약 1,000줄)를 기능별 `apps/console/src/features/*`로 분리 | import 경로 변경, Next 빌드 | `make verify` + Claude in Chrome으로 콘텐츠 목록·편집·설정 화면 확인 |
-| 2-2 | 통합 테스트를 `apps/api/test/`로 이동하거나 루트 유지 결정 기록 | 테스트 경로만 | `pnpm test` |
+| 2-1 | **완료 2026-10-01** `console.tsx`·`marketing.tsx`를 `apps/console/{lib,components/ui,features/*}`의 PascalCase 파일로 분리(코드 이동만, 로직·JSX 변경 없음) | import 경로 변경, Next 빌드 | `make verify` 통과, 로컬 dev에서 Claude in Chrome으로 전체 보기·콘텐츠 목록·편집·제품 설정·콘텐츠 생성·공통 API 설정 화면 확인, 콘솔 오류 없음 |
+| 2-2 | **결정 2026-10-01** 루트 `tests/` 유지(`decisions.md`) | — | — |
 | 2-3 | Prettier + ESLint 도입(포맷 변경 커밋과 로직 변경 커밋 분리) | diff 노이즈 | 포맷 전후 typecheck·test 동일 |
-| 2-4 | `scripts/*.mjs` 중 일회성 점검 스크립트 정리·문서화 | 없음 | 사용 여부 확인 |
+| 2-4 | **완료 2026-10-01** `scripts/README.md`로 용도·상태 기록, 재생성 가능한 렌더 중간 파일 삭제, `.dockerignore` 축소 | 없음 | 다음 Railway 배포로 이미지 빌드 확인 |
 | 2-5 | `docs/qa/` 기능별 기록 양식 적용, Chrome UI 검증 시 `qa_temp.py` 경로 사용 | 없음 | 다음 기능부터 |
 
 ## 3단계 — 전환 명세 필요 (하네스 일치 작업으로 바꾸지 않음)

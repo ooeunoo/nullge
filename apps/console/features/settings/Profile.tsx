@@ -1,0 +1,12 @@
+'use client';
+import { useState } from 'react';
+import { Check, ShieldCheck } from 'lucide-react';
+import { type Project, type ProfileInput } from '@nullge/contracts';
+import { type Mutate } from '../content/types';
+import { BrandReference } from './BrandReference';
+
+export function Profile({project,busy,dirty,setDirty,mutate}:{project:Project;busy:boolean;dirty:boolean;setDirty:(v:boolean)=>void;mutate:Mutate}) {
+  const [form,setForm]=useState<ProfileInput>({revision:project.revision,description:project.description,audience:project.audience,facts:project.facts,tone:project.tone,avoid:project.avoid,website:project.website});
+  const fields:[keyof Omit<ProfileInput,'revision'>,string,string][]=[['description','한 줄 설명','이 제품은 무엇을 하는 서비스인가요?'],['audience','주요 고객','누구에게 전하고 싶은가요?'],['facts','확인된 기능과 근거','현재 제공하는 기능과 확인한 자료를 함께 적어 주세요.'],['tone','브랜드 말투','어떤 목소리로 이야기할까요?'],['avoid','피해야 할 표현','미확인 기능이나 보장할 수 없는 효과 등'],['website','공식 소개 링크','https://']];
+  return <div className="profile-grid"><form className="panel editor-form" onSubmit={e=>{e.preventDefault();void mutate(`projects/${project.slug}/profile`,form,'PATCH').catch(()=>{});}}><div className="section-title"><h2>브랜드 정보</h2><span className="muted">버전 {project.revision}</span></div>{fields.map(([key,label,hint])=><label key={key}>{label}{key!=='website'?<textarea required={key==='description'} rows={key==='facts'?10:key==='description'?2:3} maxLength={key==='facts'?5000:key==='avoid'?2000:1000} value={String(form[key])} placeholder={hint} onChange={e=>{setForm(f=>({...f,[key]:e.target.value}));setDirty(true);}}/>:<input type="url" maxLength={1000} value={String(form[key])} placeholder={hint} onChange={e=>{setForm(f=>({...f,[key]:e.target.value}));setDirty(true);}}/>}</label>)}<div className="editor-actions"><span className="muted">저장하면 새 버전이 만들어져요.</span><button className="button primary" disabled={busy||!dirty}>변경사항 저장</button></div></form><aside><BrandReference project={project}/><section className="panel review-panel"><ShieldCheck size={22}/><h3>콘텐츠의 기준이 되는 정보</h3><p>기능·가격·출시 상태는 실제 제공 여부를 확인하고 적어 주세요. 정보가 바뀌면 기존 콘텐츠를 다시 검토하게 돼요.</p>{project.profileReviewedAt?<p className="ready-label"><Check size={15}/>현재 버전 확인 완료</p>:<><p className="muted">초기 정보는 저장소를 참고한 초안이에요.</p><button className="button" disabled={busy||dirty||!form.facts.trim()} onClick={()=>void mutate(`projects/${project.slug}/profile/review`,{revision:project.revision}).catch(()=>{})}>현재 정보 확인 완료</button></>}</section></aside></div>;
+}
