@@ -12,17 +12,10 @@
     "repository": "nullge",
     "pushPerFeature": true
   },
-  "apps": [
-    "web",
-    "server",
-    "worker"
-  ],
+  "apps": ["web", "server", "worker"],
   "mobile": {
     "applicationId": "com.nullge.nullge",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "separateDevelopmentId": false,
     "forceUpdate": true,
     "buildProvider": "eas-local",
@@ -58,9 +51,7 @@
   },
   "deployment": {
     "provider": "railway",
-    "environments": [
-      "prod"
-    ],
+    "environments": ["prod"],
     "productionAutodeploy": false,
     "projectId": "3c584db8-6a84-4244-851d-0a4911e42674",
     "databaseEngine": "postgres"

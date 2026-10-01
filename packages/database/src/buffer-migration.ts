@@ -1,7 +1,7 @@
-import type { MigrationInterface, QueryRunner } from "typeorm";
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class BufferPublishing1790455200000 implements MigrationInterface {
-  name = "BufferPublishing1790455200000";
+  name = 'BufferPublishing1790455200000';
 
   async up(q: QueryRunner) {
     await q.query(`
@@ -12,6 +12,6 @@ export class BufferPublishing1790455200000 implements MigrationInterface {
   }
 
   async down() {
-    throw new Error("Use a reviewed migration to remove Buffer connection data.");
+    throw new Error('Use a reviewed migration to remove Buffer connection data.');
   }
 }

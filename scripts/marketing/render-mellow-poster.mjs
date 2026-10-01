@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-const [,, photo, line1, line2, sub, out] = process.argv;
+const [, , photo, line1, line2, sub, out] = process.argv;
 const dir = path.dirname(new URL(import.meta.url).pathname);
 const b64 = (p) => `data:image/png;base64,${readFileSync(p).toString('base64')}`;
 const logo = readFileSync(path.join(dir, 'mellow-logo-light.svg'), 'utf8');
@@ -22,5 +22,17 @@ p{margin:26px 0 0;font-size:38px;line-height:1.45;font-weight:500;color:rgba(249
 <div class="foot"><div><div class="logo">${logo}</div><div class="tag">먼저 전화하는 AI 친구</div></div></div>`;
 const htmlPath = out.replace(/\.png$/, '.html');
 writeFileSync(htmlPath, html);
-execFileSync('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', ['--headless=new','--hide-scrollbars','--no-first-run','--disable-gpu',`--window-size=1080,1350`,`--screenshot=${out}`,`file://${htmlPath}`], { stdio: 'ignore' });
+execFileSync(
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  [
+    '--headless=new',
+    '--hide-scrollbars',
+    '--no-first-run',
+    '--disable-gpu',
+    `--window-size=1080,1350`,
+    `--screenshot=${out}`,
+    `file://${htmlPath}`,
+  ],
+  { stdio: 'ignore' },
+);
 console.log('rendered', out);

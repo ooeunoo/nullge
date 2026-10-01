@@ -36,3 +36,9 @@
 | 산출물 | 캡처는 도구 세션 안에서만 보고 저장하지 않음. dev 로그 삭제 |
 
 구조: `lib/api.ts`(api·경로·날짜), `lib/product-brands.ts`, `components/ui/{Mark,Badge,Empty,ChannelMark}.tsx`, `features/shell/{Console,Login}.tsx`, `features/overview/Overview.tsx`, `features/content/{PostCard,PostList,Editor}.tsx`·`types.ts`·`capture-poster.ts`, `features/settings/{ProductSettings,BrandReference,Profile}.tsx`, `features/marketing/{SharedSettings,ProductChannels,GenerationHistory,AutoCreator,GeneratedAsset,PublishPanel}.tsx`·`shared.ts`.
+
+## 2단계 2-3 — Prettier (2026-10-01)
+
+- `prettier@3` 추가, `.prettierrc.json`(singleQuote, printWidth 110, trailingComma all), `.prettierignore`(docs·.harness·생성물 제외).
+- 테스트의 8진수 이스케이프 `\2`는 Prettier가 파싱하지 못해 같은 바이트인 `\x02`로 바꿨다(테스트 의미 동일).
+- `make verify`(format-check 포함) 통과: 테스트 71건, 빌드. 포맷은 별도 커밋.

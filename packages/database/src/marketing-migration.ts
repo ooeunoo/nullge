@@ -1,6 +1,6 @@
-import type { MigrationInterface, QueryRunner } from "typeorm";
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 export class MarketingWorkspace1790366400000 implements MigrationInterface {
-  name = "MarketingWorkspace1790366400000";
+  name = 'MarketingWorkspace1790366400000';
   async up(q: QueryRunner) {
     await q.query(`
     CREATE TABLE integrations (
@@ -51,6 +51,6 @@ export class MarketingWorkspace1790366400000 implements MigrationInterface {
   `);
   }
   async down() {
-    throw new Error("Use a reviewed migration to remove marketing data.");
+    throw new Error('Use a reviewed migration to remove marketing data.');
   }
 }

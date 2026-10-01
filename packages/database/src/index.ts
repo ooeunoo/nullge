@@ -18,7 +18,22 @@ export { Store, StoreError } from './store';
 export { seedDevelopment } from './seed';
 export function database(url = process.env.DATABASE_URL) {
   if (!url) throw new Error('DATABASE_URL is required');
-  return new DataSource({ type: 'postgres', url, synchronize: false, logging: false,
-    migrations: [ConsoleFoundation1790319600000, ProductProfiles1790352000000, MinimoRepositoryCorrection1790352300000, MarketingWorkspace1790366400000, BufferPublishing1790455200000, UploadedAssets1790460000000, VideoPosters1790560000000, ReviewStepRemoved1790640000000], migrationsTableName: 'nullge_migrations',
-    extra: { max: 8, connectionTimeoutMillis: 5000 } });
+  return new DataSource({
+    type: 'postgres',
+    url,
+    synchronize: false,
+    logging: false,
+    migrations: [
+      ConsoleFoundation1790319600000,
+      ProductProfiles1790352000000,
+      MinimoRepositoryCorrection1790352300000,
+      MarketingWorkspace1790366400000,
+      BufferPublishing1790455200000,
+      UploadedAssets1790460000000,
+      VideoPosters1790560000000,
+      ReviewStepRemoved1790640000000,
+    ],
+    migrationsTableName: 'nullge_migrations',
+    extra: { max: 8, connectionTimeoutMillis: 5000 },
+  });
 }

@@ -65,5 +65,7 @@ export class ConsoleFoundation1790319600000 implements MigrationInterface {
       CREATE TABLE worker_status (name text PRIMARY KEY, "heartbeatAt" timestamptz NOT NULL);
     `);
   }
-  async down() { throw new Error('Use a reviewed migration to remove console data.'); }
+  async down() {
+    throw new Error('Use a reviewed migration to remove console data.');
+  }
 }

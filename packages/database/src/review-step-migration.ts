@@ -6,7 +6,11 @@ export class ReviewStepRemoved1790640000000 implements MigrationInterface {
   async up(q: QueryRunner) {
     await q.query(`UPDATE posts SET status='draft' WHERE status='review'`);
     await q.query('ALTER TABLE posts DROP CONSTRAINT IF EXISTS posts_status_check');
-    await q.query(`ALTER TABLE posts ADD CONSTRAINT posts_status_check CHECK (status IN ('draft','approved'))`);
+    await q.query(
+      `ALTER TABLE posts ADD CONSTRAINT posts_status_check CHECK (status IN ('draft','approved'))`,
+    );
   }
-  async down() { throw new Error('Use a reviewed migration to reintroduce the review step.'); }
+  async down() {
+    throw new Error('Use a reviewed migration to reintroduce the review step.');
+  }
 }

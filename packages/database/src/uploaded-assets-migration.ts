@@ -6,5 +6,7 @@ export class UploadedAssets1790460000000 implements MigrationInterface {
     // A generated asset retains its unique job; manually uploaded assets have no job.
     await q.query('ALTER TABLE marketing_assets ALTER COLUMN "jobId" DROP NOT NULL');
   }
-  async down() { throw new Error('Use a reviewed migration to remove uploaded assets.'); }
+  async down() {
+    throw new Error('Use a reviewed migration to remove uploaded assets.');
+  }
 }

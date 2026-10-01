@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 2-1 | **완료 2026-10-01** `console.tsx`·`marketing.tsx`를 `apps/console/{lib,components/ui,features/*}`의 PascalCase 파일로 분리(코드 이동만, 로직·JSX 변경 없음) | import 경로 변경, Next 빌드 | `make verify` 통과, 로컬 dev에서 Claude in Chrome으로 전체 보기·콘텐츠 목록·편집·제품 설정·콘텐츠 생성·공통 API 설정 화면 확인, 콘솔 오류 없음 |
 | 2-2 | **결정 2026-10-01** 루트 `tests/` 유지(`decisions.md`) | — | — |
-| 2-3 | Prettier + ESLint 도입(포맷 변경 커밋과 로직 변경 커밋 분리) | diff 노이즈 | 포맷 전후 typecheck·test 동일 |
+| 2-3 | **Prettier 완료 2026-10-01** (`.prettierrc.json`, `make format`/`format-check`, verify에 포함, 포맷 전용 커밋). ESLint는 별도 단계: Next 16은 `next lint`가 없어 flat config + `eslint-config-next`를 넣고 규칙 위반을 따로 고쳐야 함 | diff 노이즈 | 포맷 전후 typecheck·테스트 71건·빌드 동일 |
 | 2-4 | **완료 2026-10-01** `scripts/README.md`로 용도·상태 기록, 재생성 가능한 렌더 중간 파일 삭제, `.dockerignore` 축소 | 없음 | 다음 Railway 배포로 이미지 빌드 확인 |
 | 2-5 | `docs/qa/` 기능별 기록 양식 적용, Chrome UI 검증 시 `qa_temp.py` 경로 사용 | 없음 | 다음 기능부터 |
 

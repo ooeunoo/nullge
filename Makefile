@@ -5,7 +5,7 @@ SHELL := /bin/bash
 RAILWAY_PROJECT := 3c584db8-6a84-4244-851d-0a4911e42674
 SERVICES := web api console worker
 
-.PHONY: help setup doctor dev db verify test typecheck build deploy storage-check credentials-check
+.PHONY: help setup doctor dev db verify test typecheck build deploy storage-check credentials-check format format-check
 
 help: ## 명령 목록
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -26,6 +26,12 @@ doctor: ## 도구 버전·설정 점검 (파일 변경 없음)
 dev: ## 로컬 DB·API·Worker·Console 실행 (127.0.0.1:4310)
 	pnpm dev
 
+format: ## Prettier로 소스 정리
+	pnpm -s prettier --write "apps/**/*.{ts,tsx,mjs,css}" "packages/**/*.ts" "tests/**/*.ts" "scripts/**/*.mjs" "*.{json,mjs}"
+
+format-check: ## Prettier 형식 검사 (verify에 포함)
+	pnpm -s prettier --check "apps/**/*.{ts,tsx,mjs,css}" "packages/**/*.ts" "tests/**/*.ts" "scripts/**/*.mjs" "*.{json,mjs}"
+
 typecheck: ## 전체 타입 검사
 	pnpm typecheck
 
@@ -44,7 +50,7 @@ storage-check: ## Git에 들어갈 임시 산출물·빌드 바이너리와 여�
 credentials-check: ## 추적 중인 .credentials 파일의 암호화 여부 점검
 	python3 .harness/tools/credentials_check.py --project .
 
-verify: doctor typecheck test build storage-check ## 푸시 전 전체 검증
+verify: doctor format-check typecheck test build storage-check ## 푸시 전 전체 검증
 
 deploy: ## 운영 배포: make deploy SERVICE=api (web|api|console|worker). GitHub 자동 배포는 사용하지 않는다.
 	@if [ -z "$(SERVICE)" ]; then echo "SERVICE를 지정하세요: make deploy SERVICE=api"; exit 2; fi

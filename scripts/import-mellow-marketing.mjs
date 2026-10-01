@@ -1,10 +1,11 @@
 // Explicitly authorized migration. No credentials are printed, written to disk, or passed in argv.
 // Requires an already registered, operator-approved Railway SSH identity.
-import {spawnSync} from 'node:child_process';
-const identity=process.argv[2];
-if(!identity)throw Error('Pass the temporary SSH identity path.');
-const sourceProject='f71b2ffa-10db-488b-af94-fe13e9c0c216',targetProject='3c584db8-6a84-4244-851d-0a4911e42674';
-const read=`
+import { spawnSync } from 'node:child_process';
+const identity = process.argv[2];
+if (!identity) throw Error('Pass the temporary SSH identity path.');
+const sourceProject = 'f71b2ffa-10db-488b-af94-fe13e9c0c216',
+  targetProject = '3c584db8-6a84-4244-851d-0a4911e42674';
+const read = `
 const {DataSource}=require(require.resolve('typeorm',{paths:['/app/packages/core']}));
 const {createDecipheriv}=require('node:crypto');
 (async()=>{
@@ -26,7 +27,7 @@ const {createDecipheriv}=require('node:crypto');
   process.stdout.write(JSON.stringify({revision:s.revision,shared,channels}));
  }finally{await db.destroy();}
 })().catch(()=>{console.error('Source marketing read failed; details withheld.');process.exitCode=1;});`;
-const write=`
+const write = `
 const {randomUUID}=require('node:crypto');
 const {database,MarketingStore,seal,unseal,WORKSPACE_ID:w}=require('/app/packages/database/dist/index.js');
 let raw='';process.stdin.setEncoding('utf8');process.stdin.on('data',d=>{raw+=d;if(raw.length>65536)process.exit(1);});
@@ -65,10 +66,35 @@ process.stdin.on('end',()=>void (async()=>{
   console.log(JSON.stringify(result));
  }finally{await db.destroy();}
 })().catch(()=>{console.error('Target migration failed; transaction rolled back; details withheld.');process.exitCode=1;}));`;
-function ssh(project,service,code,input){const result=spawnSync('railway',['ssh','--project',project,'--service',service,'--environment','production','--identity-file',identity,'--','node','-e',code],{input,encoding:'utf8',maxBuffer:1024*1024,timeout:90000});if(result.status!==0)throw Error('Secure migration step failed (provider output withheld).');return result.stdout;}
-const payload=ssh(sourceProject,'worker',read);
+function ssh(project, service, code, input) {
+  const result = spawnSync(
+    'railway',
+    [
+      'ssh',
+      '--project',
+      project,
+      '--service',
+      service,
+      '--environment',
+      'production',
+      '--identity-file',
+      identity,
+      '--',
+      'node',
+      '-e',
+      code,
+    ],
+    { input, encoding: 'utf8', maxBuffer: 1024 * 1024, timeout: 90000 },
+  );
+  if (result.status !== 0) throw Error('Secure migration step failed (provider output withheld).');
+  return result.stdout;
+}
+const payload = ssh(sourceProject, 'worker', read);
 // Parse before forwarding to reject incidental non-JSON CLI output.
-const data=JSON.parse(payload);if(!data.shared||!Array.isArray(data.channels))throw Error('Invalid migration payload.');
-const result=JSON.parse(ssh(targetProject,'api',write,JSON.stringify(data)));
-console.log(JSON.stringify(result,null,2));
-console.log('Legacy automation remained off. No credentials were deleted; no generation or publishing was requested.');
+const data = JSON.parse(payload);
+if (!data.shared || !Array.isArray(data.channels)) throw Error('Invalid migration payload.');
+const result = JSON.parse(ssh(targetProject, 'api', write, JSON.stringify(data)));
+console.log(JSON.stringify(result, null, 2));
+console.log(
+  'Legacy automation remained off. No credentials were deleted; no generation or publishing was requested.',
+);

@@ -6,7 +6,7 @@ import { call, jobLabels, message, money } from './shared';
 
 export function GenerationHistory({ project }: { project: Project }) {
   const [jobs, setJobs] = useState<GenerationJob[]>([]),
-    [error, setError] = useState("");
+    [error, setError] = useState('');
   useEffect(() => {
     let active = true;
     const load = () =>
@@ -14,7 +14,7 @@ export function GenerationHistory({ project }: { project: Project }) {
         .then((j) => {
           if (active) {
             setJobs(j);
-            setError("");
+            setError('');
           }
         })
         .catch((e) => {
@@ -40,13 +40,9 @@ export function GenerationHistory({ project }: { project: Project }) {
           <div>
             <strong>{j.title || j.prompt || `${project.name} 자동 콘텐츠`}</strong>
             <p className="muted">
-              {jobLabels[j.status]} ·{" "}
-              {j.format === "text"
-                ? "텍스트"
-                : j.format === "image"
-                  ? "이미지"
-                  : "영상"}{" "}
-              · 예상 {money(Number(j.estimatedUsd))}
+              {jobLabels[j.status]} ·{' '}
+              {j.format === 'text' ? '텍스트' : j.format === 'image' ? '이미지' : '영상'} · 예상{' '}
+              {money(Number(j.estimatedUsd))}
             </p>
             {j.error && (
               <p role="alert" className="job-error">
@@ -55,10 +51,7 @@ export function GenerationHistory({ project }: { project: Project }) {
             )}
           </div>
           {j.postId && (
-            <a
-              className="button"
-              href={`/projects/${project.slug}/marketing/${j.postId}`}
-            >
+            <a className="button" href={`/projects/${project.slug}/marketing/${j.postId}`}>
               결과 검토
               <ArrowUpRight size={14} />
             </a>
