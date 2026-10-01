@@ -9,7 +9,7 @@
 | 저장소 | `ooeunoo/nullge` **public** (gh repo view). 하네스 기본값은 private |
 | 앱 | `apps/site`(정적 공개 사이트), `apps/console`(Next.js 16), `apps/api`(NestJS), `apps/worker`, `packages/contracts`, `packages/database`. 모바일 없음. adopt가 `apps: ["worker"]`로 감지한 것을 `web/server/worker`로 정정 |
 | 배포 | Railway 프로젝트 `3c584db8…`, 서비스 web/api/console/worker/Postgres, 환경 production 하나. 서비스에 GitHub source 없음 → **Railway 자동 배포 없음**, `railway up`만 사용 |
-| 공개 사이트 | DNS `www.nullge.com` → GitHub Pages. `.github/workflows/pages.yml`이 **main 푸시마다** 사이트를 재배포함(최근 3회 모두 docs/console 변경에 반응). Railway `web` 서비스는 준비만 됨 |
+| 공개 사이트 | (전환 전) DNS → GitHub Pages, main 푸시마다 재배포. 2026-10-01 Railway `web`으로 전환하고 Pages 제거 |
 | 버전 | root package에 version 없음, 태그 없음. `harness.config.json`의 0.1.0은 CLI 입력값 |
 | 비밀 | Railway 변수에만 있음. `.credentials/` 없음, `.gitignore`가 `.credentials/`를 제외(하네스는 git-crypt 암호화 후 커밋) |
 | 언어 | 사이트·Console 모두 한국어. 하네스 기본은 영어 원본·다국어 |
@@ -44,7 +44,7 @@
 |---|---|---|---|
 | 저장소 공개 범위 | public | private | 공개 사이트 소스·외부 링크 영향, GitHub Pages는 private 저장소에서 유료 플랜 필요. 사용자 결정 |
 | 자격 증명 | Railway 변수만, `.credentials/` 미사용·ignore | git-crypt 암호화 커밋 | 저장소가 public인 동안은 암호화 파일도 커밋하지 않는 것이 안전. private 전환과 함께 결정 |
-| 공개 사이트 호스팅 | ~~GitHub Pages~~ → 2026-10-01 Railway `web`으로 전환 완료(사용자 지시) | Railway `web` + 수동 배포 | 캐시 만료 후 Pages 워크플로·사이트 제거 |
+| 공개 사이트 호스팅 | ~~GitHub Pages~~ → 2026-10-01 Railway `web`으로 전환 완료(사용자 지시) | Railway `web` + 수동 배포 | Pages 워크플로·사이트 제거 완료 |
 | 서비스 버전·출시 기록 | 없음 | `1.0.0`부터 patch, `docs/releases/<v>.md`, 태그 | 첫 출시 버전을 무엇으로 볼지(이미 운영 중) 결정 후 태그 |
 | 언어 | 한국어 단일 | 영어 원본·다국어·`docs/harness/locales.json` | 내부 도구와 회사 사이트의 대상 언어 결정. 사용자 화면 변경이므로 기능 단위 |
 | Telegram 운영 알림 | 없음 | 서비스별 봇·채널 | 필요 이벤트 정의 후 nullge-telegram |

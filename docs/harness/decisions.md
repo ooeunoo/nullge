@@ -5,7 +5,7 @@
 | 날짜 | 항목 | 결정 | 이유 | 영향 기능·파일 |
 |---|---|---|---|---|
 | 2026-10-01 | 앱 구성 | web(site·console)·server(api)·worker, 모바일 없음 | 실제 저장소 구조 | `harness.config.json`, `docs/harness/adoption.json` |
-| 2026-10-01 | 배포 방식 | Railway는 `railway up` 수동 배포 유지, GitHub 자동 배포 없음. 공개 사이트는 GitHub Pages이며 사이트 파일 변경 시에만 워크플로 실행 | 기능 푸시와 운영 배포 분리 | `Makefile deploy`, `.github/workflows/pages.yml` |
+| 2026-10-01 | 배포 방식 | 모든 서비스 `railway up` 수동 배포, GitHub 자동 배포·Pages 없음(같은 날 Pages 제거) | 기능 푸시와 운영 배포 분리 | `Makefile deploy` |
 | 2026-10-01 | DB 엔진 | PostgreSQL(Railway Postgres, 로컬 16) | 기존 운영 | `harness.config.json deployment.databaseEngine` |
 | 2026-10-01 | 저장소 공개 범위 | public 유지(전환 미결정) | 하네스 private 기본값과 다름; 사용자 결정 필요 | `docs/plans/harness-adoption.md` 3단계 |
 | 2026-10-01 | 자격 증명 | Railway 변수만 사용, `.credentials/` 미사용 | 저장소가 public | `.gitignore`, `docs/harness/credentials.manifest.json` |
@@ -15,7 +15,7 @@
 | 2026-10-01 | 테스트 위치 | 통합 테스트는 루트 `tests/` 유지(패키지 소스와 API를 함께 검증, 전용 로컬 DB 생성) | 하네스의 앱별 `test/`는 단일 앱 테스트 기준; 이 저장소는 패키지 경계 테스트가 중심 | `tests/`, `vitest` |
 | 2026-10-01 | 일회성 스크립트 | 경로 유지, `scripts/README.md`로 용도·상태 기록 | 문서가 기존 경로를 참조 | `scripts/README.md` |
 | 2026-10-01 | Docker 빌드 컨텍스트 | docs·tests·하네스·마케팅 스크립트를 이미지에서 제외 | 운영 이미지에 불필요, 컨텍스트 축소 | `.dockerignore` |
-| 2026-10-01 | 공개 사이트 호스팅 | `www.nullge.com`을 Railway `web`으로 전환, 루트는 GoDaddy 301 전달, GitHub Pages는 캐시 만료 후 제거 | 사용자 지시(2026-10-01) | `docs/marketing/09-operations.md`, `.github/workflows/pages.yml` |
+| 2026-10-01 | 공개 사이트 호스팅 | `www.nullge.com`을 Railway `web`으로 전환, 루트는 GoDaddy 301 전달, GitHub Pages 제거 완료 | 사용자 지시(2026-10-01) | `docs/marketing/09-operations.md`, `.github/workflows/pages.yml` |
 | 2026-10-01 | 스키마 제약 | `mobile`·`telegram.enabled=true` 블록은 스키마 필수라 남겨 두고 사용하지 않음 | 하네스 스키마가 조건부 블록을 허용하지 않음 | `harness.config.json` |
 
 계정·토큰의 비밀 값은 기록하지 않는다. 선택 앱, DB 엔진, locale 범위, 개발 식별자, 지원 버전, 자동 배포, 관리자 복구, 플랫폼 권한 등 프로젝트 결정만 추가한다.

@@ -107,4 +107,4 @@ Railway Postgres → Backups에서 일간+주간 스케줄을 설정하고 스�
 - Railway mellow 프로젝트 web 서비스에 남아 있던 `www.nullge.com` 커스텀 도메인만 삭제하고(다른 mellow 도메인·서비스는 그대로), nullge 프로젝트 `web` 서비스에 등록했다. Railway가 반환한 값: CNAME `oh27aktx.up.railway.app`, 검증 TXT `_railway-verify.www`.
 - GoDaddy: `www` CNAME을 `ooeunoo.github.io` → `oh27aktx.up.railway.app`로, 기존 `_railway-verify.www` TXT를 새 토큰으로 바꿨다. 루트는 "전달" 탭에서 `https://www.nullge.com` 영구(301, 마스킹 없음) 전달을 추가했고 GoDaddy가 GitHub A 레코드 4개를 자기 전달 IP로 교체했다.
 - 확인: 권한 네임서버 CNAME 반영, Railway 소유권 검증 `verified`·인증서 `VALID`, Railway IP로 직접 해석한 `https://www.nullge.com/` 200(`server: railway-hikari`, 내용 해시가 Pages와 동일 `b555c10139de`), `http(s)://nullge.com/` → 301 `https://www.nullge.com/`. 루트의 경로 포함 요청(`/a?b=1`)은 GoDaddy 전달에서 404로 응답한다(GitHub 시절에는 리디렉션). 사이트는 단일 페이지라 영향이 없지만 기록해 둔다.
-- 공개 리졸버 캐시(TTL 1시간)가 빠진 뒤 GitHub Pages 워크플로와 Pages 사이트를 제거한다.
+- 1.1.1.1·8.8.8.8·9.9.9.9가 Railway CNAME을 반환한 뒤(17:17 KST) `.github/workflows/pages.yml`을 삭제하고 GitHub Pages 사이트를 API로 제거했다. 이제 `main` 푸시는 어떤 운영 배포도 유발하지 않으며, 공개 사이트 변경은 `make deploy SERVICE=web`으로 배포한다.
