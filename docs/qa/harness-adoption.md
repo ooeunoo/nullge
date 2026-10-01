@@ -14,7 +14,7 @@
 | `make verify` | 통과: typecheck, vitest 9파일 71건, 전체 빌드, storage_check PASS (2026-10-01) |
 | `python3 .harness/tools/storage_check.py --project .` | PASS, 삭제 없음 |
 | `.harness/tools/adopt.py --project .` preview | actions 없음(기존 설정 유지) |
-| Pages 워크플로 | 이번 푸시는 사이트 파일을 바꾸지 않으므로 실행되지 않아야 함 — 푸시 후 `gh run list`로 확인: 커밋 `a2d72d8` 푸시에서는 `pages.yml` 자체가 바뀌어 1회 실행됨(run 36832621330, 사이트 파일 동일). 이후 문서·코드 푸시에서 실행되지 않는지 다음 푸시에서 확인 |
+| Pages 워크플로 | 이번 푸시는 사이트 파일을 바꾸지 않으므로 실행되지 않아야 함 — 푸시 후 `gh run list`로 확인: 커밋 `a2d72d8` 푸시에서는 `pages.yml` 자체가 바뀌어 1회 실행됨(run 36832621330, 사이트 파일 동일). 문서만 바꾼 다음 푸시 `3a232ce`에서는 실행되지 않음(`gh run list` 최신 실행이 그대로) |
 | Railway | 푸시로 배포가 시작되지 않음 — `railway deployment list`에서 최신 배포가 2026-09-28 수동 배포임을 확인 |
 
 ## 정리

@@ -9,7 +9,7 @@
     "공개 사이트 Railway 전환·Pages 중지 시점 결정 필요",
     "하네스 고정 계정 이메일이 public 저장소 파일에 포함됨(harness.config.json, platforms.json); 처리 방식 결정 필요"
   ],
-  "lastVerifiedCommit": "a2d72d8",
-  "lastPushedCommit": "a2d72d8",
+  "lastVerifiedCommit": "3a232ce",
+  "lastPushedCommit": "3a232ce",
   "updatedAt": "2026-10-01"
 }
