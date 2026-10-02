@@ -124,11 +124,16 @@ svg {
 .product { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-raised); }
 .product + .product { margin-top: var(--space-md); }
 .productClipit { --product-bg: #ff7959; --product-ink: #242326; --product-accent: #ff7959; }
+.productAttic { --product-bg: #38362f; --product-ink: #f5f0e6; --product-accent: #eaa77e; }
+.productKept { --product-bg: #3e5c4e; --product-ink: #f6f1e8; --product-accent: #9fb3a6; }
+.productDotori { --product-bg: #e8eedf; --product-ink: #342e28; --product-accent: #d9a27a; }
 .page .product:hover { text-decoration: none; border-color: var(--border-strong); }
 .productVisual { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-md); min-height: 390px; padding: var(--space-lg); background: var(--product-bg); color: var(--product-ink); }
 .productIcon { border-radius: var(--radius-lg); }
 .productName { font-size: 54px; font-weight: 600; letter-spacing: -3px; line-height: 1; }
+.productNameKo { font-size: 38px; letter-spacing: -2px; word-break: keep-all; text-align: center; }
 .productTag { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-align: center; }
+.productTagKo { font-size: 11px; letter-spacing: 1px; }
 .productCopy { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-md); padding: var(--space-lg); }
 .productCopy h3 { font-size: clamp(30px, 3.5vw, 42px); line-height: 1.3; letter-spacing: -1.5px; }
 .productCopy > p:not(.eyebrow) { font-size: 14px; line-height: 1.9; color: var(--text-secondary); word-break: keep-all; }
