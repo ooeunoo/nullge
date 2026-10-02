@@ -4,6 +4,8 @@ export const channelSchema = z.enum(['x', 'threads', 'instagram']);
 export const MAX_POST_IMAGE_BYTES = 5 * 1024 * 1024;
 export const MAX_POST_VIDEO_BYTES = 15 * 1024 * 1024;
 export const MAX_POST_POSTER_BYTES = 1024 * 1024;
+/** Length of an automatically generated video clip (Veo supports 4, 6 or 8 seconds). */
+export const GENERATED_VIDEO_SECONDS = 8;
 export const POST_BODY_LIMIT = 21 * 1024 * 1024;
 /** Manual attachment as a data URL: PNG/JPEG up to 5 MB or MP4 up to 15 MB. */
 export const MEDIA_DATA_URL = /^data:(image\/(png|jpeg)|video\/mp4);base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -200,6 +202,7 @@ export const secretFields = [
   'openaiKey',
   'higgsfieldKey',
   'higgsfieldSecret',
+  'geminiKey',
   'bufferApiKey',
   'xClientId',
   'xClientSecret',
@@ -227,6 +230,7 @@ export const integrationInput = z
         openaiKey: secret.optional(),
         higgsfieldKey: secret.optional(),
         higgsfieldSecret: secret.optional(),
+        geminiKey: secret.optional(),
         bufferApiKey: secret.optional(),
         xClientId: secret.optional(),
         xClientSecret: secret.optional(),

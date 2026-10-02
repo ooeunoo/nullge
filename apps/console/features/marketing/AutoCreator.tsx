@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Sparkles } from 'lucide-react';
 import {
+  GENERATED_VIDEO_SECONDS,
   CHANNEL_LABELS,
   type Project,
   type Channel,
@@ -165,7 +166,7 @@ export function AutoCreator({ project, manual }: { project: Project; manual: Rea
                 [
                   ['text', '글', '바로 쓸 수 있는 문구'],
                   ['image', '이미지', '이미지 1장 + 문구'],
-                  ['video', '영상', '5초 세로 영상 + 문구'],
+                  ['video', '영상', `${GENERATED_VIDEO_SECONDS}초 세로 영상 + 문구`],
                 ] as const
               ).map(([value, label, description]) => (
                 <label className={format === value ? 'selected' : ''} key={value}>

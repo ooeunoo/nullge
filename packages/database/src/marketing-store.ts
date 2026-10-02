@@ -23,6 +23,7 @@ import {
   socialIdentity,
   xTokens,
   planInstructions,
+  VIDEO_SECONDS,
   type Credentials,
 } from './marketing-providers';
 import {
@@ -40,6 +41,7 @@ const envNames: Record<string, string> = {
   openaiKey: 'OPENAI_API_KEY',
   higgsfieldKey: 'HIGGSFIELD_API_KEY',
   higgsfieldSecret: 'HIGGSFIELD_API_SECRET',
+  geminiKey: 'GEMINI_API_KEY',
   xClientId: 'X_CLIENT_ID',
   xClientSecret: 'X_CLIENT_SECRET',
   instagramClientId: 'INSTAGRAM_CLIENT_ID',
@@ -489,14 +491,16 @@ export class MarketingStore {
       s = await this.settingsRow(w),
       c = this.credentials(s);
     if (!c.openaiKey) throw new StoreError(400, '공통 설정에서 OpenAI API를 연결해 주세요.');
-    if (input.format !== 'text' && (!c.higgsfieldKey || !c.higgsfieldSecret))
+    if (input.format === 'image' && (!c.higgsfieldKey || !c.higgsfieldSecret))
       throw new StoreError(400, '공통 설정에서 Higgsfield API를 연결해 주세요.');
+    if (input.format === 'video' && !c.geminiKey)
+      throw new StoreError(400, '공통 설정에서 Google Gemini API 키를 등록해 주세요.');
     if (!s.openaiInputUsd || !s.openaiOutputUsd || (input.format !== 'text' && !s[`${input.format}Usd`]))
       throw new StoreError(
         400,
         '공통 설정에서 공급자의 현재 단가를 입력해 주세요. 비용 확인 전에는 생성하지 않습니다.',
       );
-    if (input.format !== 'text' && !process.env.HIGGSFIELD_MEDIA_HOSTS?.trim())
+    if (input.format === 'image' && !process.env.HIGGSFIELD_MEDIA_HOSTS?.trim())
       throw new StoreError(
         503,
         '생성 결과를 안전하게 저장할 CDN 허용 목록 설정이 필요합니다. 비용이 발생하는 요청은 보내지 않았습니다.',
@@ -524,7 +528,10 @@ export class MarketingStore {
     ];
     if (input.format !== 'text')
       lines.push({
-        label: input.format === 'image' ? 'Higgsfield 이미지 1장' : 'Higgsfield 5초 영상 1개',
+        label:
+          input.format === 'image'
+            ? 'Higgsfield 이미지 1장'
+            : `Google Veo 3.1 Lite ${VIDEO_SECONDS}초 영상 1개 (720p·9:16)`,
         usd: Number(s[`${input.format}Usd`]),
       });
     const totalUsd = Math.ceil(lines.reduce((n, l) => n + l.usd, 0) * 1e4) / 1e4,

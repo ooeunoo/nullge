@@ -82,6 +82,7 @@ async function settings() {
       openaiKey: 'sk-TEST-NOT-REAL',
       higgsfieldKey: 'test',
       higgsfieldSecret: 'test',
+      geminiKey: 'gemini-test-not-real',
       xClientId: 'test-client',
       xClientSecret: 'test-secret',
     },
@@ -318,6 +319,19 @@ describe('shared integrations and protected marketing workflow', () => {
         format: 'image',
       }),
     ).rejects.toMatchObject({ status: 503 });
+    if (before) process.env.HIGGSFIELD_MEDIA_HOSTS = before;
+  });
+  it('quotes Veo video with the Gemini key alone, without the Higgsfield CDN allowlist', async () => {
+    const before = process.env.HIGGSFIELD_MEDIA_HOSTS;
+    delete process.env.HIGGSFIELD_MEDIA_HOSTS;
+    const q = await marketing.quote(WORKSPACE_ID, 'mellow', actor, { ...input, format: 'video' });
+    expect(q.lines.at(-1)).toMatchObject({ label: expect.stringContaining('Veo 3.1 Lite'), usd: 1 });
+    const s = await marketing.settings(WORKSPACE_ID);
+    await marketing.saveSettings(WORKSPACE_ID, actor, { ...s, secrets: {}, clear: ['geminiKey'] });
+    await expect(
+      marketing.quote(WORKSPACE_ID, 'mellow', actor, { ...input, format: 'video', prompt: '다른 요청' }),
+    ).rejects.toMatchObject({ status: 400 });
+    await settings();
     if (before) process.env.HIGGSFIELD_MEDIA_HOSTS = before;
   });
   it('binds temporary public media URLs to asset and workspace', () => {

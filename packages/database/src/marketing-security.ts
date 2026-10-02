@@ -67,12 +67,24 @@ function publicAddress(ip: string) {
   }
   return /^[23]/.test(ip) && !ip.startsWith('2001:db8:') && !ip.startsWith('2002:');
 }
-export async function downloadMedia(value: string) {
-  // Exact CDN host allowlist; no arbitrary project/user URLs are fetched by the server.
+export interface MediaSource {
+  allowed: (host: string) => boolean;
+  headers: (host: string) => Record<string, string>;
+  hint: string;
+}
+/** Exact CDN host allowlist; no arbitrary project/user URLs are fetched by the server. */
+export function cdnSource(): MediaSource {
   const hosts = (process.env.HIGGSFIELD_MEDIA_HOSTS || '')
     .split(',')
     .map((v) => v.trim())
     .filter(Boolean);
+  return {
+    allowed: (host) => hosts.includes(host),
+    headers: () => ({}),
+    hint: '서버 HIGGSFIELD_MEDIA_HOSTS 허용 목록에 등록해 주세요.',
+  };
+}
+export async function downloadMedia(value: string, source: MediaSource = cdnSource()) {
   let url = new URL(value);
   for (let hop = 0; hop < 4; hop++) {
     if (
@@ -80,18 +92,16 @@ export async function downloadMedia(value: string) {
       url.username ||
       url.password ||
       url.port ||
-      !hosts.includes(url.hostname) ||
+      !source.allowed(url.hostname) ||
       isIP(url.hostname)
     )
-      throw new StoreError(
-        400,
-        `생성 미디어 CDN 호스트 ${url.hostname}을(를) 서버 HIGGSFIELD_MEDIA_HOSTS 허용 목록에 등록해 주세요.`,
-      );
+      throw new StoreError(400, `생성 미디어 호스트 ${url.hostname}: ${source.hint}`);
     const addresses = await lookup(url.hostname, { all: true });
     if (!addresses.length || addresses.some((a) => !publicAddress(a.address)))
       throw new StoreError(400, '미디어 주소가 허용되지 않습니다.');
     const r = await fetch(url, {
       redirect: 'manual',
+      headers: source.headers(url.hostname),
       signal: AbortSignal.timeout(45000),
     });
     if ([301, 302, 303, 307, 308].includes(r.status)) {

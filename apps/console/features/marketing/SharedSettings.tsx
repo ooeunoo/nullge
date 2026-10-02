@@ -1,7 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { type Channel, type IntegrationInput, type Integrations, type SecretField } from '@nullge/contracts';
+import {
+  GENERATED_VIDEO_SECONDS,
+  type Channel,
+  type IntegrationInput,
+  type Integrations,
+  type SecretField,
+} from '@nullge/contracts';
 import { call, message, secretLabels } from './shared';
 
 export function SharedSettings() {
@@ -188,6 +194,13 @@ export function SharedSettings() {
                 {keyField('higgsfieldSecret')}
               </div>
             </section>
+            <section className="integration-section" aria-labelledby="gemini-heading">
+              <div className="integration-heading">
+                <h2 id="gemini-heading">Google Gemini (Veo 영상)</h2>
+                {status(['geminiKey'])}
+              </div>
+              <div className="integration-fields">{keyField('geminiKey')}</div>
+            </section>
             <section className="integration-section" aria-labelledby="buffer-heading">
               <div className="integration-heading">
                 <h2 id="buffer-heading">Buffer</h2>
@@ -299,13 +312,13 @@ export function SharedSettings() {
               </section>
               <section className="integration-section" aria-labelledby="media-price-heading">
                 <div className="integration-heading">
-                  <h2 id="media-price-heading">Higgsfield</h2>
+                  <h2 id="media-price-heading">미디어 생성</h2>
                 </div>
                 <div className="integration-fields integration-price-grid">
                   {(
                     [
-                      ['imageUsd', '이미지 / 1장 (USD)'],
-                      ['videoUsd', '영상 / 5초 (USD)'],
+                      ['imageUsd', 'Higgsfield 이미지 / 1장 (USD)'],
+                      ['videoUsd', `Veo 영상 / ${GENERATED_VIDEO_SECONDS}초 (USD)`],
                     ] as const
                   ).map(([key, label]) => (
                     <div className="integration-field" key={key}>

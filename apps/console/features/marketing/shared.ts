@@ -18,6 +18,7 @@ export const secretLabels: Record<SecretField, string> = {
   openaiKey: 'OpenAI API Key',
   higgsfieldKey: 'Higgsfield Key ID',
   higgsfieldSecret: 'Higgsfield Key Secret',
+  geminiKey: 'Gemini API Key',
   bufferApiKey: 'Buffer API Key',
   xClientId: 'X OAuth Client ID',
   xClientSecret: 'X OAuth Client Secret',

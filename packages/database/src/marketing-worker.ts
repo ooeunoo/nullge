@@ -6,6 +6,7 @@ import {
   planContent,
   renderMedia,
   mediaStatus,
+  mediaSource,
   ProviderError,
   reviewCandidates,
 } from './marketing-providers';
@@ -166,7 +167,7 @@ export class MarketingWorker {
         if (!['completed', 'succeeded'].includes(status)) return;
         const url = j.format === 'image' ? result.images?.[0]?.url : result.video?.url;
         if (typeof url !== 'string') throw new StoreError(502, '공급자 미디어 응답에 파일 주소가 없습니다.');
-        const asset = await downloadMedia(url);
+        const asset = await downloadMedia(url, mediaSource(credentials, j.providerId));
         if (
           (j.format === 'image' && !asset.mime.startsWith('image/')) ||
           (j.format === 'video' && asset.mime !== 'video/mp4')
