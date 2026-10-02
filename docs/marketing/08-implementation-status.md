@@ -89,3 +89,8 @@ DNS/인증이 완료되기 전 기존 Pages를 종료하거나 운영 로그인 
 - 콘솔 밖(앱·웹)에서 직접 올린 글을 기록하는 `POST projects/:slug/posts/:id/published { revision, url }`를 추가했다. Instagram·Threads·X 주소만 받고, 게시됨으로 잠그며 피드에서 게시물을 연다. 편집 화면의 "다른 곳에서 직접 게시했다면" 패널에서 쓴다.
 - Buffer가 거부한(`failed`) 글은 삭제할 수 있다. 큐 기록(`publication_jobs`)도 함께 지운다.
 - 검증: 71개 테스트, 타입체크 통과.
+
+## 2026-10-02 — 제품 3개 추가
+
+- 다락방 카메라(`atticcamera`)·Kept(`kept`)·Dotori(`dotori`)를 카탈로그와 Console에 추가했다. 세부 내용은 [10-product-setup.md](10-product-setup.md).
+- 배포: api `a8e449cd`, console `fc0dc0a2` SUCCESS. API predeploy 로그에 "Initial unreviewed product profiles inserted; existing profiles preserved." 확인, 운영 Console에서 새 로고 3개 200. 운영 Console의 제품 목록 화면은 운영자 Google 세션이 만료돼 직접 보지 못했다(로그인은 운영자만).
