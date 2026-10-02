@@ -34,3 +34,19 @@ bootstrap은 신규 Movy를 포함한 5개 제품을 누락된 경우에만 등�
 - 실제 격리된 PostgreSQL 테스트: 초기 5개 프로필, 입력 계약, 제품 경계·동시 수정·승인 보호, 원본 버전 보존, 가져오기 반복 안전성, 수정·검토·콘텐츠가 있는 데이터 보호, 로컬 로고 파일 검증. minimo 정정의 이름 유지·다른 제품 보존·중복 적용 안전성·사용자 수정 보호도 추가 검증한다.
 - 로컬 데스크톱에서 5개 제품·로고 10곳 로딩, 제품·브랜드의 내용·출처 표시 확인. 초안이나 확인 완료 상태를 테스트용으로 만들지 않는다.
 - 운영 배포·최종 화면 검증 결과는 [구현 상태](08-implementation-status.md)에 기록한다.
+
+## 2026-10-02 — 제품 3개 추가 (다락방 카메라 · Kept · Dotori)
+
+운영자 요청으로 `~/projects/eun/{atticcamera,kept,dotori}`를 분석해 기본 프로필과 로고를 추가했다. 기존 5개 제품과 같은 규칙이다: 저장소 문서에 근거한 초안이며 "프로필 확인 필요" 상태로 시작하고, bootstrap은 없는 제품만 넣고 기존 입력을 덮어쓰지 않는다.
+
+| slug | 이름 | 한 줄 | 근거 문서 | 로고 원본 | 사이트 |
+|---|---|---|---|---|---|
+| `atticcamera` | 다락방 카메라 | 1970–2012 추억의 카메라 35대로 오늘을 찍는 카메라 앱 | README.md, docs/store-listing.md, docs/business-model.md | apps/mobile/assets/icon.png | https://atticcamera.nullge.com/ |
+| `kept` | Kept | 광고·가입 없는 조용한 성경 읽기·기도 앱 | store/listing.md, docs/specs/kept.md | apps/mobile/assets/icon.png | https://kept.nullge.com/ |
+| `dotori` | Dotori (한국어 두토리) | 오늘 할 일 3–5개, 못 한 일은 다정하게 넘기는 플래너 | store/ios/ko/metadata.json, docs/specs/{billing,ads,web-landing}.md | design/exports/app-icon.png | https://dotori.nullge.com/ (한국어 `/ko/`) |
+
+- 프로필 원본은 `packages/database/src/product-catalog-20261002.ts`. 9월 25일 카탈로그는 마이그레이션 재현용이라 그대로 두고, `currentProductCatalog`가 두 목록을 합친다.
+- 로고는 각 앱 아이콘을 240px PNG로 줄여 `apps/console/public/brands/`에 뒀다. 설정 화면의 "기본 정보 분석" 날짜는 제품별로 표시한다.
+- 확인하지 못해 프로필 "주의"에 적어 둔 것: 다락방 카메라의 무료 범위(문서 두 개가 서로 다름)와 제조사 비제휴, Kept의 스토어 공개 여부와 한국어 성경 미제공, Dotori의 공개 출시 여부와 가격 변동 가능성. 게시 전 운영자가 브랜드 설정에서 확인한다.
+- 세 사이트 모두 2026-10-02 HTTPS 200 확인.
+- 검증: 테스트 71건(제품 8개·로고 검사 포함), 로컬 Console에서 전체 보기 카드 8개·로고 로딩·Kept 설정 화면 확인.

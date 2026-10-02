@@ -18,7 +18,7 @@ export function BrandReference({ project }: { project: Project }) {
         <dd>{brand.source}</dd>
         <dt>기본 정보 분석</dt>
         <dd>
-          2026. 09. 25 · 저장소 기준
+          {brand.analyzed} · 저장소 기준
           <br />
           고객·말투는 초기 가설, 기능은 근거를 함께 기록했어요. 출시·운영 상태는 별도 확인이 필요해요.
         </dd>

@@ -1,4 +1,5 @@
 import { productCatalog20260925 } from './product-catalog-20260925';
+import { productCatalog20261002 } from './product-catalog-20261002';
 
 /** User corrected the repository to desktop_pet; the product name/slug stays minimo. */
 export const minimoDesktopPet = {
@@ -16,6 +17,8 @@ export const minimoDesktopPet = {
   website: '',
 };
 
-export const currentProductCatalog = productCatalog20260925.map((p) =>
-  p.slug === 'minimo' ? minimoDesktopPet : p,
-);
+/** Bootstrap inserts whichever of these a workspace is missing; existing profiles are never replaced. */
+export const currentProductCatalog = [
+  ...productCatalog20260925.map((p) => (p.slug === 'minimo' ? minimoDesktopPet : p)),
+  ...productCatalog20261002,
+];
