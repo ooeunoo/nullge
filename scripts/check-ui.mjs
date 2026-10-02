@@ -96,7 +96,7 @@ try {
   await evaluate(
     `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('로컬 작업공간 열기')).click()`,
   );
-  await until(`document.querySelectorAll('.project-card').length===8`);
+  await until(`document.querySelectorAll('.project-card').length===5`);
   const desktop = await cdp('Page.captureScreenshot', { format: 'png' });
   await writeFile(path.join(output, 'overview-desktop.png'), Buffer.from(desktop.data, 'base64'));
   await cdp('Page.navigate', { url: `${base}/projects/mellow/marketing/new` });
@@ -115,7 +115,7 @@ try {
   await evaluate(`document.querySelector('button.logout').click()`);
   await until(`!!document.querySelector('.login-card')`);
   console.log(
-    'PASS: local login, eight products, product editor, mobile width, logout. No drafts were created.',
+    'PASS: local login, five products, product editor, mobile width, logout. No drafts were created.',
   );
   console.log(`Screenshots: ${output}`);
 } finally {

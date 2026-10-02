@@ -373,7 +373,7 @@ describe('shared integrations and protected marketing workflow', () => {
     delete process.env.HIGGSFIELD_MEDIA_HOSTS;
   });
   it('serializes X token rotation and preserves the confirmed account revision', async () => {
-    const p = await store.project(WORKSPACE_ID, 'desk'),
+    const p = await store.project(WORKSPACE_ID, 'clipit'),
       context = `channel:${WORKSPACE_ID}:${p.id}:x`;
     await db.query(
       `INSERT INTO channel_connections ("workspaceId","projectId",channel,revision,ciphertext,"userId",username,"verifiedAt","expiresAt") VALUES ($1,$2,'x',1,$3,'12345','desk_test',now(),now()-interval '1 day')`,

@@ -8,3 +8,4 @@ pnpm-lock.yaml
 .harness
 docs
 *.md
+apps/console/next-env.d.ts

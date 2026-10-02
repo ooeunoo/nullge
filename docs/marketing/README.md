@@ -2,7 +2,7 @@
 
 작성: 2026-09-25 · 상태: 기반 구현·Railway 배포, Console 도메인·운영 로그인 완료 · 작업명: Nullge Console
 
-Nullge가 만드는 여러 제품의 홍보 콘텐츠를 한곳에서 기획하고, 검토하고, 각 제품의 SNS 계정에 발행하는 것을 목표로 한다. 현재 ClipIt·minimo·mellow·Movy·desk와 2026-10-02 추가한 다락방 카메라·Kept·Dotori의 기본 프로필과 로고를 구성했다. 실제 SNS 발행은 아직 구현하지 않았다.
+Nullge가 만드는 여러 제품의 홍보 콘텐츠를 한곳에서 기획하고, 검토하고, 각 제품의 SNS 계정에 발행하는 것을 목표로 한다. 현재 제품은 ClipIt·mellow·다락방 카메라·Kept·Dotori다(2026-10-02에 세 제품을 추가하고 minimo·Movy·desk를 제거). 실제 SNS 발행은 아직 구현하지 않았다.
 
 ## 이번에 합의한 방향
 

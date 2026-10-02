@@ -1,5 +1,6 @@
 import { productCatalog20260925 } from './product-catalog-20260925';
 import { productCatalog20261002 } from './product-catalog-20261002';
+import { retiredProductSlugs } from './products-retired-migration';
 
 /** User corrected the repository to desktop_pet; the product name/slug stays minimo. */
 export const minimoDesktopPet = {
@@ -17,8 +18,11 @@ export const minimoDesktopPet = {
   website: '',
 };
 
-/** Bootstrap inserts whichever of these a workspace is missing; existing profiles are never replaced. */
+/**
+ * Bootstrap inserts whichever of these a workspace is missing; existing profiles are never replaced.
+ * The 2026-09-25 snapshot and minimoDesktopPet stay for migration replay; retired products are filtered out.
+ */
 export const currentProductCatalog = [
-  ...productCatalog20260925.map((p) => (p.slug === 'minimo' ? minimoDesktopPet : p)),
+  ...productCatalog20260925.filter((p) => !retiredProductSlugs.includes(p.slug)),
   ...productCatalog20261002,
 ];

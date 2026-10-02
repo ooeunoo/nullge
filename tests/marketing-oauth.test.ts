@@ -129,7 +129,7 @@ describe('product OAuth without generation or publication', () => {
         longLived: true,
       });
       expect(JSON.stringify(await marketing.connections(WORKSPACE_ID, 'mellow'))).not.toContain('test-token');
-      expect((await row(channel, 'desk')).connected).toBe(false);
+      expect((await row(channel, 'clipit')).connected).toBe(false);
       const body = new URLSearchParams(fetch.mock.calls[0]![1].body);
       expect(body.get('redirect_uri')).toBe(url.searchParams.get('redirect_uri'));
       expect(body.get('code')).toBe('test-code');

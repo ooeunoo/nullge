@@ -27,7 +27,7 @@ export function Login({ onLogin }: { onLogin: () => Promise<void> }) {
           <br />
           작업은 한곳에서.
         </h1>
-        <p>ClipIt · minimo · mellow · Movy · desk · 다락방 카메라 · Kept · Dotori</p>
+        <p>ClipIt · mellow · 다락방 카메라 · Kept · Dotori</p>
         {error && <p role="alert">{error}</p>}
         {!options && <p>로그인 방법을 확인하고 있어요.</p>}
         {options?.google && (

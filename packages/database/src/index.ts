@@ -7,6 +7,7 @@ import { MarketingWorkspace1790366400000 } from './marketing-migration';
 import { BufferPublishing1790455200000 } from './buffer-migration';
 import { UploadedAssets1790460000000 } from './uploaded-assets-migration';
 import { ReviewStepRemoved1790640000000 } from './review-step-migration';
+import { ProductsRetired1790726400000 } from './products-retired-migration';
 import { VideoPosters1790560000000 } from './video-poster-migration';
 export { MarketingStore } from './marketing-store';
 export { MarketingWorker } from './marketing-worker';
@@ -32,6 +33,7 @@ export function database(url = process.env.DATABASE_URL) {
       UploadedAssets1790460000000,
       VideoPosters1790560000000,
       ReviewStepRemoved1790640000000,
+      ProductsRetired1790726400000,
     ],
     migrationsTableName: 'nullge_migrations',
     extra: { max: 8, connectionTimeoutMillis: 5000 },

@@ -8,6 +8,10 @@ import { productCatalog20260925 } from '../packages/database/src/product-catalog
 import { productBrands } from '../apps/console/lib/product-brands';
 import { MinimoRepositoryCorrection1790352300000 } from '../packages/database/src/minimo-correction-migration';
 import { currentProductCatalog, minimoDesktopPet } from '../packages/database/src/minimo-desktop-pet';
+import {
+  ProductsRetired1790726400000,
+  retiredProductSlugs,
+} from '../packages/database/src/products-retired-migration';
 
 const adminUrl = process.env.NULLGE_TEST_DATABASE_ADMIN_URL || 'postgres://nullge@127.0.0.1:5549/postgres';
 const url = new URL(adminUrl);
@@ -163,14 +167,28 @@ it('ships a local, nonempty logo for every catalog product', () => {
   }
 });
 
-it('uses the approved minimo companion vector without changing its repository identity', () => {
-  expect(productBrands.minimo).toMatchObject({
-    logo: '/brands/minimo.svg',
-    repository: '~/projects/eun/desktop_pet',
-    source: 'assets/brand/mark.svg',
-  });
-  const svg = readFileSync(new URL('../apps/console/public/brands/minimo.svg', import.meta.url), 'utf8');
-  expect(svg).toContain('#E4863A');
-  expect(svg).toContain('data-eyes="true"');
-  expect(svg).not.toContain('crispEdges');
+it('removes retired products with their history but keeps one that already holds content', async () => {
+  const q = await legacyFixture();
+  try {
+    expect(currentProductCatalog.map((p) => p.slug).filter((s) => retiredProductSlugs.includes(s))).toEqual(
+      [],
+    );
+    const [desk] = await q.query("SELECT id FROM projects WHERE slug='desk'");
+    await q.query(
+      'INSERT INTO posts (id,"workspaceId","projectId",title,channel,language,"profileRevision") VALUES ($1,$2,$3,$4,$5,$6,1)',
+      [randomUUID(), WORKSPACE_ID, desk.id, '보존할 콘텐츠', 'x', 'ko'],
+    );
+    const [minimo] = await q.query("SELECT id FROM projects WHERE slug='minimo'");
+    const migration = new ProductsRetired1790726400000();
+    await migration.up(q);
+    await migration.up(q);
+    expect(
+      (await q.query('SELECT slug FROM projects ORDER BY slug')).map((r: { slug: string }) => r.slug),
+    ).toEqual(['clipit', 'desk', 'mellow']);
+    expect(await q.query('SELECT 1 FROM profile_versions WHERE "projectId"=$1', [minimo.id])).toHaveLength(0);
+    expect(await q.query('SELECT 1 FROM posts WHERE "projectId"=$1', [desk.id])).toHaveLength(1);
+  } finally {
+    await q.rollbackTransaction();
+    await q.release();
+  }
 });
