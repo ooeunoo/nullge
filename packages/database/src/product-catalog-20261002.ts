@@ -4,7 +4,7 @@ import type { Project } from '@nullge/contracts';
  * Products added on 2026-10-02 from ~/projects/eun/{atticcamera,kept,dotori}. Repository inspection snapshot,
  * not a release or marketing approval: every profile starts unreviewed and bootstrap never overwrites edits.
  */
-export const productCatalog20261002: Omit<Project, 'id' | 'revision' | 'profileReviewedAt'>[] = [
+export const productCatalog20261002: Omit<Project, 'id' | 'revision' | 'profileReviewedAt' | 'guide'>[] = [
   {
     slug: 'atticcamera',
     name: '다락방 카메라',

@@ -4,6 +4,7 @@ import { Check, ShieldCheck } from 'lucide-react';
 import { type Project, type ProfileInput } from '@nullge/contracts';
 import { type Mutate } from '../content/types';
 import { BrandReference } from './BrandReference';
+import { GuideEditor, guideToText, textToGuide } from './GuideEditor';
 
 export function Profile({
   project,
@@ -27,6 +28,8 @@ export function Profile({
     avoid: project.avoid,
     website: project.website,
   });
+  const [guide, setGuide] = useState(project.guide);
+  const [guideText, setGuideText] = useState(() => guideToText(project.guide));
   const fields: [keyof Omit<ProfileInput, 'revision'>, string, string][] = [
     ['description', '한 줄 설명', '이 제품은 무엇을 하는 서비스인가요?'],
     ['audience', '주요 고객', '누구에게 전하고 싶은가요?'],
@@ -41,7 +44,11 @@ export function Profile({
         className="panel editor-form"
         onSubmit={(e) => {
           e.preventDefault();
-          void mutate(`projects/${project.slug}/profile`, form, 'PATCH').catch(() => {});
+          void mutate(
+            `projects/${project.slug}/profile`,
+            { ...form, guide: textToGuide(guideText, guide) },
+            'PATCH',
+          ).catch(() => {});
         }}
       >
         <div className="section-title">
@@ -77,6 +84,19 @@ export function Profile({
             )}
           </label>
         ))}
+        <GuideEditor
+          project={project}
+          guide={guide}
+          text={guideText}
+          onGuide={(g) => {
+            setGuide(g);
+            setDirty(true);
+          }}
+          onText={(t) => {
+            setGuideText(t);
+            setDirty(true);
+          }}
+        />
         <div className="editor-actions">
           <span className="muted">저장하면 새 버전이 만들어져요.</span>
           <button className="button primary" disabled={busy || !dirty}>

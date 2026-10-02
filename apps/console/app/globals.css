@@ -2175,3 +2175,90 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 8px;
 }
+
+.guide-editor {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 8px 0 18px;
+  display: grid;
+  gap: 14px;
+}
+.guide-editor legend {
+  font-weight: 700;
+  padding: 0 6px;
+}
+.guide-editor .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.guide-colors {
+  display: flex;
+  gap: 16px;
+}
+.guide-colors label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.guide-colors input[type='color'] {
+  width: 56px;
+  height: 36px;
+  padding: 2px;
+  border-radius: 8px;
+}
+.guide-logo {
+  border-radius: 10px;
+  padding: 16px;
+  display: inline-flex;
+  max-width: 260px;
+}
+.guide-logo img {
+  max-height: 64px;
+  max-width: 220px;
+}
+.template-panel summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.template-panel {
+  display: grid;
+  gap: 12px;
+}
+.template-panel .segmented {
+  display: flex;
+  gap: 8px;
+}
+.template-panel .segmented button {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+}
+.template-panel .segmented button.selected {
+  border-color: currentColor;
+  font-weight: 600;
+}
+.template-panel .segmented button:disabled {
+  opacity: 0.4;
+}
+.template-panel label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.template-panel label input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+.template-panel .field-hint {
+  font-size: 11px;
+}

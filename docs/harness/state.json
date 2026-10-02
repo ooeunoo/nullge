@@ -1,9 +1,9 @@
 {
   "phase": "adoption-refactor",
   "serviceVersion": "0.1.0",
-  "activeFeature": "harness-adoption",
+  "activeFeature": "content-quality",
   "completedFeatures": [],
-  "nextAction": "2-5 Chrome QA에 qa_temp 적용, ESLint 도입(별도), 3단계 전환 항목은 사용자 결정 대기",
+  "nextAction": "content-quality 운영 확인(운영자 로그인 후 mellow 가이드 입력·글 생성 1회), 이어서 multilingual-channels 명세",
   "blockers": [
     "저장소 public 유지 여부와 .credentials 암호화 커밋 방식 결정 필요",
     "하네스 고정 계정 이메일이 public 저장소 파일에 포함됨(harness.config.json, platforms.json); 처리 방식 결정 필요"

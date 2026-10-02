@@ -1,6 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import type { DataSource, EntityManager } from 'typeorm';
-import type { Project, Post, PostInput, ProfileInput, Activity } from '@nullge/contracts';
+import {
+  contentGuide,
+  emptyGuide,
+  type Project,
+  type Post,
+  type PostInput,
+  type ProfileInput,
+  type Activity,
+} from '@nullge/contracts';
 import { uploadedImage, uploadedMedia, type UploadedMedia } from './uploaded-image';
 
 export class StoreError extends Error {
@@ -13,6 +21,14 @@ export class StoreError extends Error {
 }
 function normalized<T>(value: unknown): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+/** Rows may hold an empty or older guide; readers always get a complete, valid one. */
+export function guideOf(value: unknown) {
+  const parsed = contentGuide.safeParse(value ?? {});
+  return parsed.success ? parsed.data : emptyGuide();
+}
+function asProject(row: Record<string, unknown>): Project {
+  return { ...normalized<Project>(row), guide: guideOf(row.guide) };
 }
 async function mediaContent(image?: string): Promise<UploadedMedia | undefined> {
   if (image === undefined) return undefined;
@@ -46,7 +62,7 @@ export class Store {
       [workspaceId, slug],
     );
     if (!project) throw new StoreError(404, '제품을 찾을 수 없습니다.');
-    return normalized(project);
+    return asProject(project);
   }
   async dashboard(workspaceId: string) {
     const [projects, posts, activities] = await Promise.all([
@@ -59,11 +75,10 @@ export class Store {
         [workspaceId],
       ),
     ]);
-    return normalized<{ projects: Project[]; posts: Post[]; activities: Activity[] }>({
-      projects,
-      posts,
-      activities,
-    });
+    return {
+      ...normalized<{ posts: Post[]; activities: Activity[] }>({ posts, activities }),
+      projects: projects.map(asProject),
+    };
   }
   private async event(
     manager: EntityManager,
@@ -127,7 +142,8 @@ export class Store {
         `WITH changed AS (UPDATE posts SET title=$5,caption=$6,brief=$7,channel=$8,language=$9,
         status='draft',"approvedAt"=NULL,"approvedBy"=NULL,"profileRevision"=$10,revision=revision+1,"updatedAt"=now(),
         "assetId"=COALESCE($11::uuid,"assetId"),format=CASE WHEN $11::uuid IS NULL THEN format ELSE $12::text END,
-        "posterAssetId"=CASE WHEN $11::uuid IS NULL THEN (CASE WHEN format='video' THEN COALESCE($13::uuid,"posterAssetId") ELSE "posterAssetId" END) ELSE $13::uuid END
+        "posterAssetId"=CASE WHEN $11::uuid IS NULL THEN (CASE WHEN format='video' THEN COALESCE($13::uuid,"posterAssetId") ELSE "posterAssetId" END) ELSE $13::uuid END,
+        "sourceAssetId"=CASE WHEN $11::uuid IS NULL THEN "sourceAssetId" ELSE NULL END
         WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3 AND revision=$4 AND "publishStatus" IS NULL RETURNING *) SELECT * FROM changed`,
         [
           workspaceId,
@@ -258,10 +274,10 @@ export class Store {
       await manager.query('UPDATE events SET "postId"=NULL WHERE "postId"=$1', [id]);
       await manager.query('UPDATE generation_jobs SET "postId"=NULL WHERE "postId"=$1', [id]);
       await manager.query('DELETE FROM posts WHERE id=$1', [id]);
-      for (const asset of [current.assetId, current.posterAssetId])
+      for (const asset of [current.assetId, current.posterAssetId, current.sourceAssetId])
         if (asset) {
           await manager.query(
-            `DELETE FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3 AND NOT EXISTS (SELECT 1 FROM posts WHERE "assetId"=$1 OR "posterAssetId"=$1)`,
+            `DELETE FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3 AND NOT EXISTS (SELECT 1 FROM posts WHERE "assetId"=$1 OR "posterAssetId"=$1 OR "sourceAssetId"=$1)`,
             [asset, workspaceId, project.id],
           );
         }
@@ -284,9 +300,27 @@ export class Store {
         [workspaceId, project.id],
       );
       if (active.n) throw new StoreError(409, '게시 작업이 완료된 뒤 제품 정보를 변경해 주세요.');
+      const guide = input.guide ?? project.guide;
+      const logo = guide.visual.logoAssetId;
+      if (logo) {
+        const [asset] = await manager.query(
+          `SELECT 1 FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3 AND mime IN ('image/png','image/jpeg')`,
+          [logo, workspaceId, project.id],
+        );
+        if (!asset) throw new StoreError(400, '로고 이미지를 다시 올려 주세요.');
+      }
       const [next] = await manager.query(
-        `WITH changed AS (UPDATE projects SET description=$2,audience=$3,facts=$4,tone=$5,avoid=$6,website=$7,revision=revision+1,"profileReviewedAt"=NULL WHERE id=$1 RETURNING *) SELECT * FROM changed`,
-        [project.id, input.description, input.audience, input.facts, input.tone, input.avoid, input.website],
+        `WITH changed AS (UPDATE projects SET description=$2,audience=$3,facts=$4,tone=$5,avoid=$6,website=$7,guide=$8,revision=revision+1,"profileReviewedAt"=NULL WHERE id=$1 RETURNING *) SELECT * FROM changed`,
+        [
+          project.id,
+          input.description,
+          input.audience,
+          input.facts,
+          input.tone,
+          input.avoid,
+          input.website,
+          JSON.stringify(guide),
+        ],
       );
       await manager.query(
         'INSERT INTO profile_versions ("workspaceId","projectId",revision,snapshot) VALUES ($1,$2,$3,$4)',
@@ -297,7 +331,7 @@ export class Store {
         [workspaceId, project.id],
       );
       await this.event(manager, workspaceId, project.id, actorId, 'profile_updated', project.name);
-      return normalized(next);
+      return asProject(next);
     });
   }
   async reviewProfile(
@@ -317,7 +351,7 @@ export class Store {
         [project.id],
       );
       await this.event(manager, workspaceId, project.id, actorId, 'profile_reviewed', project.name);
-      return normalized(next);
+      return asProject(next);
     });
   }
 }

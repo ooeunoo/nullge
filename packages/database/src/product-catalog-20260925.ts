@@ -1,7 +1,7 @@
 import type { Project } from '@nullge/contracts';
 
 /** Repository inspection snapshot, not a release/marketing approval. Keep immutable for migration replay. */
-export const productCatalog20260925: Omit<Project, 'id' | 'revision' | 'profileReviewedAt'>[] = [
+export const productCatalog20260925: Omit<Project, 'id' | 'revision' | 'profileReviewedAt' | 'guide'>[] = [
   {
     slug: 'clipit',
     name: 'ClipIt',

@@ -5,6 +5,8 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import type { DataSource, EntityManager } from 'typeorm';
 import {
   secretFields,
+  GUIDE_LOGO_BYTES,
+  type TemplateRenderInput,
   type Channel,
   type IntegrationInput,
   type Integrations,
@@ -13,7 +15,8 @@ import {
   type BufferChannel,
 } from '@nullge/contracts';
 import { Store, StoreError } from './store';
-import { HISTORY_BYTES, PLANNING_OUTPUT_TOKENS } from './marketing-history';
+import { normalizeLogo, renderTemplate } from './content-render';
+import { HISTORY_BYTES, PLANNING_OUTPUT_TOKENS, REVIEW_OUTPUT_TOKENS } from './marketing-history';
 import { encryptionReady, seal, unseal, referenceImage } from './marketing-security';
 import {
   providerJson,
@@ -505,10 +508,18 @@ export class MarketingStore {
         (input.reference ? 4096 : 0),
       textCost =
         (inputTokens * Number(s.openaiInputUsd) + PLANNING_OUTPUT_TOKENS * Number(s.openaiOutputUsd)) / 1e6;
+    const reviewCost =
+      ((Buffer.byteLength(planInstructions(p, false)) + 8192) * Number(s.openaiInputUsd) +
+        REVIEW_OUTPUT_TOKENS * Number(s.openaiOutputUsd)) /
+      1e6;
     const lines = [
       {
         label: `OpenAI ${s.openaiModel} · 제품·이력 분석 + 후보 기획 (출력 최대 ${PLANNING_OUTPUT_TOKENS.toLocaleString('en-US')} 토큰)`,
         usd: Math.ceil(textCost * 1e4) / 1e4,
+      },
+      {
+        label: `OpenAI ${s.openaiModel} · 가이드 기준 후보 검수`,
+        usd: Math.ceil(reviewCost * 1e4) / 1e4,
       },
     ];
     if (input.format !== 'text')
@@ -527,7 +538,7 @@ export class MarketingStore {
           AND status='quoted' AND "quoteExpiresAt">now()+interval '30 seconds'
           AND prompt=$4 AND format=$5 AND channel=$6 AND language=$7
           AND reference IS NOT DISTINCT FROM $8 AND "profileRevision"=$9 AND "settingsRevision"=$10
-          AND snapshot->>'plannerVersion'='2' ORDER BY "createdAt" DESC LIMIT 1`,
+          AND snapshot->>'plannerVersion'='3' ORDER BY "createdAt" DESC LIMIT 1`,
         [
           w,
           p.id,
@@ -569,7 +580,7 @@ export class MarketingStore {
           input.reference || null,
           p.revision,
           s.revision,
-          JSON.stringify({ project: p, model: s.openaiModel, lines, plannerVersion: 2 }),
+          JSON.stringify({ project: p, model: s.openaiModel, lines, plannerVersion: 3 }),
           totalUsd,
           expiresAt,
         ],
@@ -633,6 +644,79 @@ export class MarketingStore {
     if (thumbnails.size > 400) thumbnails.delete(thumbnails.keys().next().value as string);
     thumbnails.set(key, content);
     return { mime: 'image/jpeg', content };
+  }
+  /** Stores a product logo for templates. The guide references it after the operator saves the profile. */
+  async uploadGuideLogo(w: string, slug: string, actorId: string, image: string) {
+    const match = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/.exec(image);
+    const bytes = match ? Buffer.from(match[2], 'base64') : Buffer.alloc(0);
+    if (!bytes.length || bytes.length > GUIDE_LOGO_BYTES)
+      throw new StoreError(400, '1 MB 이하의 PNG 또는 JPEG 로고를 올려 주세요.');
+    const content = await normalizeLogo(bytes);
+    return this.db.transaction(async (m) => {
+      const p = await this.store.project(w, slug, m, true);
+      const id = randomUUID();
+      await m.query(
+        'INSERT INTO marketing_assets (id,"workspaceId","projectId",mime,content) VALUES ($1,$2,$3,$4,$5)',
+        [id, w, p.id, 'image/png', content],
+      );
+      await this.event(m, w, p.id, actorId, '템플릿 로고 업로드');
+      return { id };
+    });
+  }
+  /**
+   * Re-renders a draft's image with the product's template. The photo the template is drawn on is kept as the
+   * post's source, so applying again replaces the overlay instead of stacking it.
+   */
+  async applyTemplate(w: string, slug: string, id: string, actorId: string, input: TemplateRenderInput) {
+    const p = await this.store.project(w, slug);
+    const [post] = await this.db.query(
+      'SELECT * FROM posts WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3',
+      [w, p.id, id],
+    );
+    if (!post || post.revision !== input.revision)
+      throw new StoreError(409, '콘텐츠가 변경되었습니다. 새로고침해 주세요.');
+    if (post.publishStatus) throw new StoreError(409, '게시 요청이 기록된 콘텐츠는 수정할 수 없습니다.');
+    if (post.format === 'video') throw new StoreError(400, '영상에는 템플릿을 적용할 수 없어요.');
+    const sourceId = post.sourceAssetId || (post.format === 'image' ? post.assetId : null);
+    const read = async (assetId: string | null) => {
+      if (!assetId) return undefined;
+      const [row] = await this.db.query(
+        'SELECT content FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3',
+        [assetId, w, p.id],
+      );
+      return row?.content as Buffer | undefined;
+    };
+    const content = await renderTemplate({
+      kind: input.kind,
+      palette: p.guide.visual.palette,
+      tagline: p.guide.visual.tagline,
+      headline: input.headline,
+      subline: input.subline,
+      photo: input.kind === 'photo-headline' ? await read(sourceId) : undefined,
+      logo: await read(p.guide.visual.logoAssetId),
+    });
+    return this.db.transaction(async (m) => {
+      await this.store.project(w, slug, m, true);
+      const assetId = randomUUID();
+      await m.query(
+        'INSERT INTO marketing_assets (id,"workspaceId","projectId",mime,content) VALUES ($1,$2,$3,$4,$5)',
+        [assetId, w, p.id, 'image/jpeg', content],
+      );
+      const [next] = await m.query(
+        `WITH changed AS (UPDATE posts SET "assetId"=$5,"sourceAssetId"=$6,format='image',status='draft',"approvedAt"=NULL,"approvedBy"=NULL,"profileRevision"=$7,revision=revision+1,"updatedAt"=now()
+          WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3 AND revision=$4 AND "publishStatus" IS NULL RETURNING *) SELECT * FROM changed`,
+        [w, p.id, id, input.revision, assetId, input.kind === 'photo-headline' ? sourceId : null, p.revision],
+      );
+      if (!next) throw new StoreError(409, '콘텐츠가 변경되었습니다. 새로고침해 주세요.');
+      // The previous composed image is no longer referenced by anything.
+      if (post.assetId && post.assetId !== sourceId)
+        await m.query(
+          `DELETE FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "jobId" IS NULL AND NOT EXISTS (SELECT 1 FROM posts WHERE "assetId"=$1 OR "posterAssetId"=$1 OR "sourceAssetId"=$1)`,
+          [post.assetId, w],
+        );
+      await this.event(m, w, p.id, actorId, '템플릿 적용');
+      return JSON.parse(JSON.stringify(next));
+    });
   }
   async event(m: EntityManager, w: string, p: string, actor: string, title: string) {
     await m.query(

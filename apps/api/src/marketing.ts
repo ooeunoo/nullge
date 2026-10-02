@@ -22,6 +22,8 @@ import {
   generationConfirm,
   integrationInput,
   bufferConnectionInput,
+  guideLogoInput,
+  templateRenderInput,
 } from '@nullge/contracts';
 import { SessionGuard, origin, type AuthenticatedRequest } from './auth';
 function parse<T>(
@@ -165,6 +167,32 @@ export class MarketingController {
   ) {
     const input = parse(generationConfirm, body);
     return this.store.confirm(r.operator.workspaceId, slug, r.operator.id, input.quoteId);
+  }
+  @Post('projects/:slug/guide/logo') guideLogo(
+    @Req() r: AuthenticatedRequest,
+    @Param('slug') slug: string,
+    @Body() body: unknown,
+  ) {
+    return this.store.uploadGuideLogo(
+      r.operator.workspaceId,
+      slug,
+      r.operator.id,
+      parse(guideLogoInput, body).image,
+    );
+  }
+  @Post('projects/:slug/templates/:id') template(
+    @Req() r: AuthenticatedRequest,
+    @Param('slug') slug: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: unknown,
+  ) {
+    return this.store.applyTemplate(
+      r.operator.workspaceId,
+      slug,
+      id,
+      r.operator.id,
+      parse(templateRenderInput, body),
+    );
   }
   @Get('projects/:slug/generations') jobs(@Req() r: AuthenticatedRequest, @Param('slug') slug: string) {
     return this.store.jobs(r.operator.workspaceId, slug);

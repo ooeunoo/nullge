@@ -43,6 +43,86 @@ export const externalPublication = z
       ),
   })
   .strict();
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, '#RRGGBB 형식의 색을 입력해 주세요.');
+export const TEMPLATE_KINDS = ['none', 'photo-headline', 'color-card'] as const;
+export type TemplateKind = (typeof TEMPLATE_KINDS)[number];
+/**
+ * Per-product content guide. Everything product-specific about content quality lives here as data;
+ * planning, review and rendering code is shared by every product.
+ */
+export const contentGuide = z
+  .object({
+    pillars: z
+      .array(z.object({ name: z.string().trim().min(1).max(60), description: z.string().max(400) }).strict())
+      .max(6)
+      .default([]),
+    examples: z
+      .array(
+        z
+          .object({
+            channel: channelSchema.optional(),
+            text: z.string().trim().min(1).max(1900),
+            note: z.string().max(300).default(''),
+          })
+          .strict(),
+      )
+      .max(10)
+      .default([]),
+    counterExamples: z
+      .array(z.object({ text: z.string().trim().min(1).max(1900), reason: z.string().max(300) }).strict())
+      .max(10)
+      .default([]),
+    bannedPhrases: z.array(z.string().trim().min(1).max(120)).max(40).default([]),
+    requireWebsite: z.boolean().default(false),
+    hashtags: z
+      .object({
+        fixed: z.array(z.string().regex(/^#[\p{L}\p{N}_]{1,40}$/u, '해시태그는 #으로 시작해 주세요.')).max(5),
+        max: z.number().int().min(0).max(10),
+      })
+      .strict()
+      .default({ fixed: [], max: 3 }),
+    visual: z
+      .object({
+        photoStyle: z.string().max(1200).default(''),
+        template: z.enum(TEMPLATE_KINDS).default('none'),
+        palette: z
+          .object({ background: hexColor, ink: hexColor, accent: hexColor })
+          .strict()
+          .default({ background: '#212620', ink: '#F9F9F9', accent: '#C6ED82' }),
+        tagline: z.string().max(60).default(''),
+        logoAssetId: z.uuid().nullable().default(null),
+      })
+      .strict()
+      .default({
+        photoStyle: '',
+        template: 'none',
+        palette: { background: '#212620', ink: '#F9F9F9', accent: '#C6ED82' },
+        tagline: '',
+        logoAssetId: null,
+      }),
+  })
+  .strict();
+export type ContentGuide = z.infer<typeof contentGuide>;
+export const emptyGuide = (): ContentGuide => contentGuide.parse({});
+export const GUIDE_LOGO_BYTES = 1024 * 1024;
+export const guideLogoInput = z
+  .object({
+    image: z
+      .string()
+      .max(Math.ceil(GUIDE_LOGO_BYTES / 3) * 4 + 'data:image/jpeg;base64,'.length)
+      .regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/),
+  })
+  .strict();
+/** Headline lines for a template render; the second line takes the accent color. */
+export const templateRenderInput = z
+  .object({
+    revision: z.number().int().positive(),
+    kind: z.enum(['photo-headline', 'color-card']),
+    headline: z.array(z.string().trim().min(1).max(24)).min(1).max(2),
+    subline: z.string().max(60).default(''),
+  })
+  .strict();
+export type TemplateRenderInput = z.infer<typeof templateRenderInput>;
 export const profileInput = z
   .object({
     revision: z.number().int().positive(),
@@ -55,6 +135,7 @@ export const profileInput = z
       z.literal(''),
       z.url().refine((s) => s.startsWith('https://'), 'HTTPS 주소를 입력해 주세요.'),
     ]),
+    guide: contentGuide.optional(),
   })
   .strict();
 export type Channel = z.infer<typeof channelSchema>;
@@ -72,6 +153,7 @@ export interface Project {
   tone: string;
   avoid: string;
   website: string;
+  guide: ContentGuide;
   revision: number;
   profileReviewedAt: string | null;
 }
@@ -79,6 +161,7 @@ export interface Post extends Omit<PostInput, 'image' | 'poster'> {
   format?: 'text' | 'image' | 'video';
   assetId?: string | null;
   posterAssetId?: string | null;
+  sourceAssetId?: string | null;
   publishStatus?:
     'queued' | 'creating' | 'processing' | 'submitting' | 'published' | 'failed' | 'uncertain' | null;
   publishError?: string | null;

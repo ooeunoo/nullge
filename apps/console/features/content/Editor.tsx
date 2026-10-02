@@ -23,6 +23,7 @@ import { Mark } from '../../components/ui/Mark';
 import { capturePoster } from './capture-poster';
 import { type Mutate } from './types';
 import { api, projectPath, settingsPath } from '../../lib/api';
+import { TemplatePanel } from './TemplatePanel';
 
 export function Editor({
   project,
@@ -442,6 +443,9 @@ export function Editor({
                 </button>
               </form>
             </details>
+          )}
+          {post && !post.publishStatus && post.format !== 'video' && !dirty && (
+            <TemplatePanel project={project} post={post} busy={busy} mutate={mutate} />
           )}
           <div className="publishing-note">
             <SlidersHorizontal size={17} />

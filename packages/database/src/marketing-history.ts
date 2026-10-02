@@ -4,6 +4,7 @@ import { StoreError } from './store';
 // Also reserved in the quote: new posts between quote and execution cannot inflate it.
 export const HISTORY_BYTES = 48_000;
 export const PLANNING_OUTPUT_TOKENS = 3600;
+export const REVIEW_OUTPUT_TOKENS = 900;
 export interface ContentCandidate {
   title: string;
   caption: string;
@@ -12,6 +13,9 @@ export interface ContentCandidate {
   angle?: string;
   keyMessage?: string;
   visualConcept?: string;
+  pillar?: string;
+  headline?: string[];
+  subline?: string;
 }
 export interface ContentHistory extends ContentCandidate {
   id: string;
@@ -73,12 +77,15 @@ export async function contentHistory(
 }
 
 function normalize(value = '') {
-  return value
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/AI로 제작한 이미지·영상입니다\.|AI-generated image\/video\./gi, '')
-    .replace(/https?:\/\/\S+|#[\p{L}\p{N}_]+/gu, '')
-    .replace(/[^\p{L}\p{N}]/gu, '');
+  return (
+    value
+      .normalize('NFKC')
+      .toLowerCase()
+      // Older posts carried a disclosure line; ignore it when comparing.
+      .replace(/AI로 제작한 이미지·영상입니다\.|AI-generated image\/video\./gi, '')
+      .replace(/https?:\/\/\S+|#[\p{L}\p{N}_]+/gu, '')
+      .replace(/[^\p{L}\p{N}]/gu, '')
+  );
 }
 function similar(a = '', b = '', threshold = 0.78) {
   const x = normalize(a),
@@ -101,6 +108,7 @@ export function isRepeatedContent(candidate: ContentCandidate, previous: Content
     similar(candidate.visualConcept, previous.visualConcept, 0.9)
   );
 }
+/** Picks the first candidate (callers pass them best-first) that does not repeat history. */
 export function chooseFreshContent(candidates: ContentCandidate[], history: ContentHistory[]) {
   const candidate = candidates.find((c) => !history.some((h) => isRepeatedContent(c, h)));
   if (!candidate)

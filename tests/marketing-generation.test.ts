@@ -15,6 +15,7 @@ import {
   HISTORY_BYTES,
   type ContentCandidate,
 } from '../packages/database/src/marketing-history';
+import { withReview, planningCalls } from './helpers/openai-review';
 
 const adminUrl = process.env.NULLGE_TEST_DATABASE_ADMIN_URL || 'postgres://nullge@127.0.0.1:5549/postgres';
 if (!['127.0.0.1', 'localhost'].includes(new URL(adminUrl).hostname))
@@ -142,7 +143,7 @@ describe('one-click generation with product memory', () => {
     const first = await marketing.quote(WORKSPACE_ID, 'mellow', actor, input);
     const same = await marketing.quote(WORKSPACE_ID, 'mellow', actor, input);
     expect(same.id).toBe(first.id);
-    expect((await job(first.id)).snapshot.plannerVersion).toBe(2);
+    expect((await job(first.id)).snapshot.plannerVersion).toBe(3);
     expect(first.totalUsd).toBeGreaterThan((HISTORY_BYTES * 0.15) / 1e6);
     const other = await marketing.quote(WORKSPACE_ID, 'mellow', actor, { ...input, prompt: '다른 소재' });
     expect(other.id).not.toBe(first.id);
@@ -155,13 +156,15 @@ describe('one-click generation with product memory', () => {
     const previous = await draft('mellow', candidates[0]);
     await db.query(`UPDATE posts SET "publishStatus"='published',format='image' WHERE id=$1`, [previous.id]);
     await draft('clipit', candidates[1]);
-    const fake = vi.fn(async (_url, init) => {
-      const request = JSON.parse(init.body);
-      const memory = JSON.parse(request.messages[1].content).contentHistory;
-      expect(memory.map((row: any) => row.id)).toEqual([previous.id]);
-      expect(request.messages[0].content).toContain('blank prompt');
-      return completion();
-    });
+    const fake = vi.fn(
+      withReview(async (_url, init) => {
+        const request = JSON.parse(init.body);
+        const memory = JSON.parse(request.messages[1].content).contentHistory;
+        expect(memory.map((row: any) => row.id)).toEqual([previous.id]);
+        expect(request.messages[0].content).toContain('blank prompt');
+        return completion();
+      }),
+    );
     vi.stubGlobal('fetch', fake);
     await new MarketingWorker(db).tick();
     const finished = await job(quote.id);
@@ -171,7 +174,7 @@ describe('one-click generation with product memory', () => {
     const [post] = await db.query('SELECT * FROM posts WHERE id=$1', [finished.postId]);
     expect(post).toMatchObject({ status: 'draft', publishStatus: null, approvedAt: null, brief: '' });
     expect((await marketing.jobs(WORKSPACE_ID, 'mellow'))[0].title).toBe(candidates[1].title);
-    expect(fake).toHaveBeenCalledTimes(1);
+    expect(planningCalls(fake)).toHaveLength(1);
   });
   it('stops before paid media when every candidate repeats existing content', async () => {
     for (const candidate of candidates) await draft('mellow', candidate);
@@ -196,11 +199,13 @@ describe('one-click generation with product memory', () => {
     let calls = 0;
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => {
-        if (++calls === 2) release();
-        await bothStarted;
-        return completion();
-      }),
+      vi.fn(
+        withReview(async () => {
+          if (++calls === 2) release();
+          await bothStarted;
+          return completion();
+        }),
+      ),
     );
     await Promise.all([new MarketingWorker(db).tick(), new MarketingWorker(db).tick()]);
     const jobs = await Promise.all([job(a.id), job(b.id)]);

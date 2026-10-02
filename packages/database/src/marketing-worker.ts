@@ -2,9 +2,17 @@ import { randomUUID } from 'node:crypto';
 import type { DataSource } from 'typeorm';
 import { MarketingStore } from './marketing-store';
 import { downloadMedia } from './marketing-security';
-import { planContent, renderMedia, mediaStatus, ProviderError } from './marketing-providers';
-import { StoreError } from './store';
-import { contentHistory, chooseFreshContent } from './marketing-history';
+import {
+  planContent,
+  renderMedia,
+  mediaStatus,
+  ProviderError,
+  reviewCandidates,
+} from './marketing-providers';
+import { StoreError, guideOf } from './store';
+import { guideViolations, withFixedHashtags } from './content-checks';
+import { renderTemplate } from './content-render';
+import { contentHistory, chooseFreshContent, isRepeatedContent } from './marketing-history';
 export class MarketingWorker {
   readonly store: MarketingStore;
   constructor(readonly db: DataSource) {
@@ -36,7 +44,9 @@ export class MarketingWorker {
         throw new StoreError(409, 'API 설정이 변경되어 생성이 중단되었습니다.');
       const credentials = this.store.credentials(settings);
       if (j.status === 'queued') {
-        const useHistory = j.snapshot.plannerVersion === 2;
+        const useHistory = j.snapshot.plannerVersion >= 2;
+        const useGuide = j.snapshot.plannerVersion >= 3;
+        const guide = guideOf(j.snapshot.project.guide);
         const history = useHistory
           ? await contentHistory(this.db.manager, j.workspaceId, j.projectId, j.id)
           : undefined;
@@ -53,6 +63,43 @@ export class MarketingWorker {
           },
           history,
         );
+        let ranked = planned.candidates;
+        const reviewOf = new Map<object, { score: number; reason: string }>();
+        if (useGuide) {
+          const checked = planned.candidates
+            .map((c) => ({ ...c, caption: withFixedHashtags(c.caption, j.channel, guide) }))
+            .map((c) => ({ c, issues: guideViolations(c, j.channel, guide, j.snapshot.project.website) }));
+          const passing = checked.filter((x) => !x.issues.length).map((x) => x.c);
+          if (!passing.length)
+            throw new StoreError(
+              400,
+              `가이드 검사를 통과한 후보가 없습니다 (${[...new Set(checked.flatMap((x) => x.issues))].join(', ')}). 이미지·영상은 생성하지 않았어요. 가이드나 방향을 조정해 다시 요청해 주세요.`,
+            );
+          // Drop ideas that repeat history before paying for review; the locked pick below re-checks.
+          const fresh = passing.filter((c) => !(history || []).some((h) => isRepeatedContent(c, h)));
+          if (!fresh.length) chooseFreshContent(passing, history || []);
+          const review = await reviewCandidates(
+            credentials,
+            j.snapshot.model,
+            j.snapshot.project,
+            { channel: j.channel, language: j.language, format: j.format },
+            fresh,
+          );
+          const accepted = review.filter((r) => !r.reject);
+          if (!accepted.length)
+            throw new StoreError(
+              400,
+              `검수에서 모든 후보가 탈락했습니다 (${review
+                .map((r) => r.reason)
+                .filter(Boolean)
+                .slice(0, 2)
+                .join(' / ')}). 이미지·영상은 생성하지 않았어요.`,
+            );
+          ranked = accepted.map((r) => {
+            reviewOf.set(fresh[r.index], { score: r.score, reason: r.reason });
+            return fresh[r.index];
+          });
+        }
         // Serialize candidate selection with other workers and post creation/edits.
         // Reserve the chosen idea BEFORE any paid media request, closing the read/plan race.
         const result = await this.db.transaction(async (m) => {
@@ -65,10 +112,13 @@ export class MarketingWorker {
           const latest = useHistory
             ? await contentHistory(m, j.workspaceId, j.projectId, j.id, Infinity)
             : [];
-          const candidate = useHistory
-            ? chooseFreshContent(planned.candidates, latest)
-            : planned.candidates[0];
-          const selected = { ...candidate, usage: planned.usage, historyIds: latest.map((item) => item.id) };
+          const candidate = useHistory ? chooseFreshContent(ranked, latest) : ranked[0];
+          const selected = {
+            ...candidate,
+            usage: planned.usage,
+            historyIds: latest.map((item) => item.id),
+            ...(useGuide ? { review: reviewOf.get(candidate) ?? null } : {}),
+          };
           await m.query('UPDATE generation_jobs SET result=$2,reference=NULL,"updatedAt"=now() WHERE id=$1', [
             j.id,
             JSON.stringify(selected),
@@ -86,7 +136,10 @@ export class MarketingWorker {
           [j.id, JSON.stringify(result)],
         );
         if (!claimed) return;
-        const submitted = await renderMedia(credentials, j.format, result.mediaPrompt);
+        const style = guideOf(j.snapshot.project.guide).visual.photoStyle;
+        const prompt =
+          useGuide && style ? `${result.mediaPrompt}\n${style}`.slice(0, 2200) : result.mediaPrompt;
+        const submitted = await renderMedia(credentials, j.format, prompt);
         if (
           typeof submitted.request_id !== 'string' ||
           !submitted.request_id ||
@@ -134,7 +187,32 @@ export class MarketingWorker {
       );
     }
   }
+  /** Composes the generated photo into the product's poster template, if the guide asks for one. */
+  private async composed(j: any, asset?: { mime: string; content: Buffer }) {
+    const guide = guideOf(j.snapshot.project.guide);
+    const headline: string[] = Array.isArray(j.result?.headline) ? j.result.headline : [];
+    if (j.format !== 'image' || !asset || guide.visual.template !== 'photo-headline' || !headline.length)
+      return null;
+    let logo: Buffer | undefined;
+    if (guide.visual.logoAssetId) {
+      const [row] = await this.db.query(
+        'SELECT content FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3',
+        [guide.visual.logoAssetId, j.workspaceId, j.projectId],
+      );
+      logo = row?.content;
+    }
+    return renderTemplate({
+      kind: 'photo-headline',
+      palette: guide.visual.palette,
+      tagline: guide.visual.tagline,
+      headline,
+      subline: j.result.subline || '',
+      photo: asset.content,
+      logo,
+    });
+  }
   private async complete(j: any, asset?: { mime: string; content: Buffer }) {
+    const poster = await this.composed(j, asset);
     await this.db.transaction(async (m) => {
       // Serialize profile edits and finalization. Keep the ORIGINAL profile revision.
       await this.store.store.project(j.workspaceId, j.snapshot.project.slug, m, true);
@@ -147,8 +225,15 @@ export class MarketingWorker {
           'INSERT INTO marketing_assets (id,"workspaceId","projectId","jobId",mime,content) VALUES ($1,$2,$3,$4,$5,$6)',
           [assetId, j.workspaceId, j.projectId, j.id, asset.mime, asset.content],
         );
+      // The raw photo stays on the job; the post shows the composed poster.
+      const postAssetId = poster ? randomUUID() : assetId;
+      if (poster)
+        await m.query(
+          'INSERT INTO marketing_assets (id,"workspaceId","projectId",mime,content) VALUES ($1,$2,$3,$4,$5)',
+          [postAssetId, j.workspaceId, j.projectId, 'image/jpeg', poster],
+        );
       await m.query(
-        `INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",status,format,"assetId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'draft',$10,$11)`,
+        `INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",status,format,"assetId","sourceAssetId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'draft',$10,$11,$12)`,
         [
           id,
           j.workspaceId,
@@ -160,7 +245,8 @@ export class MarketingWorker {
           j.language,
           j.profileRevision,
           j.format,
-          assetId,
+          postAssetId,
+          poster ? assetId : null,
         ],
       );
       await m.query(

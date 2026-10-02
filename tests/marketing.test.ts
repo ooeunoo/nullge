@@ -1,3 +1,4 @@
+import { withReview, planningCalls } from './helpers/openai-review';
 import { randomUUID } from 'node:crypto';
 import { signedAssetUrl, checkAssetSignature } from '../packages/database/src/marketing-publishing';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -172,26 +173,28 @@ describe('shared integrations and protected marketing workflow', () => {
       marketing.confirm(WORKSPACE_ID, 'mellow', actor, q.id),
     ]);
     expect(confirmations[0]).toEqual(confirmations[1]);
-    const fetch = vi.fn(async () =>
-      json({
-        choices: [
-          {
-            finish_reason: 'stop',
-            message: {
-              content: plannedContent({
-                title: '목소리로 시작하는 하루',
-                caption: 'AI 친구와 오늘의 이야기를 나눠 보세요.',
-                mediaPrompt: '',
-              }),
+    const fetch = vi.fn(
+      withReview(async () =>
+        json({
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: {
+                content: plannedContent({
+                  title: '목소리로 시작하는 하루',
+                  caption: 'AI 친구와 오늘의 이야기를 나눠 보세요.',
+                  mediaPrompt: '',
+                }),
+              },
             },
-          },
-        ],
-      }),
+          ],
+        }),
+      ),
     );
     vi.stubGlobal('fetch', fetch);
     await worker.tick();
     await worker.tick();
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(planningCalls(fetch)).toHaveLength(1);
     const [j] = await db.query('SELECT * FROM generation_jobs WHERE id=$1', [q.id]);
     expect(j.status).toBe('completed');
     const post = (await store.dashboard(WORKSPACE_ID)).posts.find((p) => p.id === j.postId)!;
@@ -335,25 +338,27 @@ describe('shared integrations and protected marketing workflow', () => {
       format: 'image',
     });
     await marketing.confirm(WORKSPACE_ID, 'mellow', actor, q.id);
-    const fetch = vi.fn(async (url: any, options: any) =>
-      String(url).includes('openai.com')
-        ? json({
-            choices: [
-              {
-                finish_reason: 'stop',
-                message: {
-                  content: plannedContent({
-                    title: '따뜻한 하루',
-                    caption: 'AI 친구와 이야기해요.',
-                    mediaPrompt: 'A calm editorial still life with warm ivory and lime accents.',
-                  }),
+    const fetch = vi.fn(
+      withReview(async (url: any, options: any) =>
+        String(url).includes('openai.com')
+          ? json({
+              choices: [
+                {
+                  finish_reason: 'stop',
+                  message: {
+                    content: plannedContent({
+                      title: '따뜻한 하루',
+                      caption: 'AI 친구와 이야기해요.',
+                      mediaPrompt: 'A calm editorial still life with warm ivory and lime accents.',
+                    }),
+                  },
                 },
-              },
-            ],
-          })
-        : String(url).endsWith('/status')
-          ? json({ status: 'nsfw' })
-          : json({ request_id: 'mock-media-request', status: 'queued' }),
+              ],
+            })
+          : String(url).endsWith('/status')
+            ? json({ status: 'nsfw' })
+            : json({ request_id: 'mock-media-request', status: 'queued' }),
+      ),
     );
     vi.stubGlobal('fetch', fetch);
     await worker.tick();
