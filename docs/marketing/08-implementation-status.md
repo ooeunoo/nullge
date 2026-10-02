@@ -94,3 +94,5 @@ DNS/인증이 완료되기 전 기존 Pages를 종료하거나 운영 로그인 
 
 - 다락방 카메라(`atticcamera`)·Kept(`kept`)·Dotori(`dotori`)를 카탈로그와 Console에 추가했다. 세부 내용은 [10-product-setup.md](10-product-setup.md).
 - 배포: api `a8e449cd`, console `fc0dc0a2` SUCCESS. API predeploy 로그에 "Initial unreviewed product profiles inserted; existing profiles preserved." 확인, 운영 Console에서 새 로고 3개 200. 운영 Console의 제품 목록 화면은 운영자 Google 세션이 만료돼 직접 보지 못했다(로그인은 운영자만).
+- 같은 날 공개 랜딩에 다락방카메라·Kept·두토리 카드 추가(web `e0e14831`), 이어 Console에서 minimo·Movy·desk 제거(api `bab945a6`, console `2b44481b`). API 배포 로그: "Retired products removed: minimo, movy, desk; kept because they hold content: none." 지운 로고 주소는 이미지 대신 앱 기본 페이지를 반환한다.
+- 검증 메모: `make verify` 한 번에서 테스트 1건이 실패했다가 이후 다섯 번 연속 통과했다. 실패한 테스트 이름은 기록하지 못했다(간헐 실패로 보고 관찰 대상).
