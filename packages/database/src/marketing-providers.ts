@@ -311,7 +311,6 @@ export async function planContent(
           const value = result[key as keyof ContentCandidate];
           return (
             typeof value !== 'string' ||
-            value.length > 160 ||
             (!(key === 'visualConcept' && input.format === 'text') && !value.trim())
           );
         }))
@@ -333,7 +332,15 @@ export async function planContent(
             subline: typeof result.subline === 'string' ? result.subline.trim().slice(0, 60) : '',
           }
         : {}),
-      ...(history ? { visualConcept: input.format === 'text' ? '' : result.visualConcept } : {}),
+      // Descriptors only feed history comparison; an over-long one is trimmed instead of failing a paid run.
+      ...(history
+        ? {
+            topic: result.topic!.trim().slice(0, 160),
+            angle: result.angle!.trim().slice(0, 160),
+            keyMessage: result.keyMessage!.trim().slice(0, 160),
+            visualConcept: input.format === 'text' ? '' : result.visualConcept!.trim().slice(0, 160),
+          }
+        : {}),
       caption: result.caption,
       mediaPrompt: input.format === 'text' ? '' : result.mediaPrompt,
     })),
