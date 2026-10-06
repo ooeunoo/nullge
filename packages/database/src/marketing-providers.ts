@@ -294,31 +294,38 @@ export async function planContent(
   }
   const candidates: ContentCandidate[] = history ? result?.candidates : [result];
   if (!Array.isArray(candidates) || candidates.length !== (history ? 3 : 1)) throw new ProviderError(false);
-  for (const result of candidates) {
-    if (
-      !result ||
-      typeof result.title !== 'string' ||
-      !result.title.trim() ||
-      result.title.length > 120 ||
-      typeof result.caption !== 'string' ||
-      !result.caption.trim() ||
-      Array.from(result.caption).length > { x: 100, threads: 450, instagram: 1900 }[input.channel] ||
-      typeof result.mediaPrompt !== 'string' ||
-      result.mediaPrompt.length > 2200 ||
-      (input.format !== 'text' && !result.mediaPrompt.trim()) ||
-      (history &&
-        ['topic', 'angle', 'keyMessage', 'visualConcept'].some((key) => {
-          const value = result[key as keyof ContentCandidate];
-          return (
-            typeof value !== 'string' ||
-            (!(key === 'visualConcept' && input.format === 'text') && !value.trim())
-          );
-        }))
-    )
-      throw new StoreError(400, '생성 결과가 게시 형식에 맞지 않습니다. 자동 재생성하지 않습니다.');
-  }
+  const limit = { x: 100, threads: 450, instagram: 1900 }[input.channel];
+  const problems = (result: ContentCandidate) => {
+    if (!result) return ['빈 후보'];
+    const issues: string[] = [];
+    if (typeof result.title !== 'string' || !result.title.trim()) issues.push('제목 없음');
+    else if (result.title.length > 120) issues.push('제목 120자 초과');
+    if (typeof result.caption !== 'string' || !result.caption.trim()) issues.push('문구 없음');
+    else if (Array.from(result.caption).length > limit) issues.push(`문구 ${limit}자 초과`);
+    if (typeof result.mediaPrompt !== 'string' || result.mediaPrompt.length > 2200)
+      issues.push('미디어 지시 2200자 초과');
+    else if (input.format !== 'text' && !result.mediaPrompt.trim()) issues.push('미디어 지시 없음');
+    if (history)
+      for (const key of ['topic', 'angle', 'keyMessage', 'visualConcept'] as const) {
+        const value = result[key];
+        if (
+          typeof value !== 'string' ||
+          (!(key === 'visualConcept' && input.format === 'text') && !value.trim())
+        )
+          issues.push(`${key} 없음`);
+      }
+    return issues;
+  };
+  // One malformed candidate no longer sinks the run; the others still go through the guide checks and review.
+  const checked = candidates.map((c) => ({ c, issues: problems(c) }));
+  const valid = checked.filter((x) => !x.issues.length).map((x) => x.c);
+  if (!valid.length)
+    throw new StoreError(
+      400,
+      `생성 결과가 게시 형식에 맞지 않습니다 (${[...new Set(checked.flatMap((x) => x.issues))].join(', ')}). 자동 재생성하지 않습니다.`,
+    );
   return {
-    candidates: candidates.map((result) => ({
+    candidates: valid.map((result) => ({
       ...result,
       ...(history
         ? {

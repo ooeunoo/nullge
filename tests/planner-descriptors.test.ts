@@ -58,3 +58,28 @@ it('trims over-long history descriptors instead of failing the paid run', async 
   expect(candidates).toHaveLength(3);
   for (const c of candidates) expect(c.visualConcept).toHaveLength(160);
 });
+
+it('drops a malformed candidate and names the problem when none remain', async () => {
+  const reply = (cands: unknown[]) =>
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ candidates: cands }) } }],
+          }),
+        ),
+    );
+  const input = {
+    prompt: '',
+    format: 'video' as const,
+    channel: 'instagram' as const,
+    language: 'ko' as const,
+  };
+  vi.stubGlobal('fetch', reply([{ ...candidate(0), mediaPrompt: '' }, candidate(1), candidate(2)]));
+  const { candidates } = await planContent({ openaiKey: 'test-not-real' }, 'gpt-4o-mini', project, input, []);
+  expect(candidates.map((c) => c.title)).toEqual(['제목 1', '제목 2']);
+  vi.stubGlobal('fetch', reply([0, 1, 2].map((i) => ({ ...candidate(i), mediaPrompt: '' }))));
+  await expect(
+    planContent({ openaiKey: 'test-not-real' }, 'gpt-4o-mini', project, input, []),
+  ).rejects.toMatchObject({ status: 400, message: expect.stringContaining('미디어 지시 없음') });
+});
