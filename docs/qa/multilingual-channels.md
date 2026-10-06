@@ -16,4 +16,5 @@
 
 ## 운영
 
-- 배포 뒤 마이그레이션 `ChannelLanguages1790985600000` 적용 로그와 기존 mellow 연결(`ko`)을 확인한다.
+- 2026-10-06 배포: 커밋 `72645e2`, API `dfaf22f0`, Worker `09be2d47`, Console `35756e6e` 모두 SUCCESS. API 로그 "Console migrations applied." / "Nullge API ready.".
+- 운영 `GET projects/mellow/channels`: X `@mellow_call`(직접)과 Instagram `@mellow.call`(Buffer)이 `ko` 연결로 그대로 남았고, Threads는 미연결 `ko` 줄이다. 유료 요청과 게시는 하지 않았다.
