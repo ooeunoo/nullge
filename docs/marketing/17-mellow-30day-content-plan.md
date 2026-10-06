@@ -156,4 +156,7 @@ https://www.mellowcall.com/
 
 | 날짜 | 내용 |
 |---|---|
-| 2026-10-06 | 기획 작성. Instagram 포스터 7편·Threads 5편을 Console 초안으로 만든다(게시는 운영자 확인 후 하나씩) |
+| 2026-10-06 | 기획 작성 |
+| 2026-10-06 | 운영 mellow 가이드에 템플릿 로고(밝은 워드마크)와 하단 문구 "먼저 전화하는 친구" 저장(프로필 버전 4, 사실 변경 없음으로 검토 완료 표시) |
+| 2026-10-06 | Console 초안: Instagram 포스터 7편(A1 467b8023, B1 6652e37f, C1 dd3f3072, B2 fa2cd4ae, C2 ccefe345, A2 a35f7925, B3 b906a268, 색 배경 카드 템플릿), Threads 5편(e04d5565, 138a2a02, b3f55fe3, f03ddbe3, d9c5eefa). 모두 초안이며 게시하지 않았다 |
+| 2026-10-06 | `@mellow.call` 한국어 게시물 4편을 `@mellow.call_kr`에 다시 게시 완료(DeI96z5FcpZ, DeI99R_kVCg, DeI-GfmiGrx, DeKCv3mD8BO). 원본 보관은 운영자가 앱에서 |
