@@ -104,3 +104,5 @@ Type like you talk — dates and times just work.
 | 2026-10-03 | 전체 | 이미지와 문구 준비 완료. 운영자 가입 대기 |
 | 2026-10-06 | Instagram `@mellow.call_kr` | 한국어 소개(기존 `@mellow.call` 문구)와 프로필 사진 저장. 이름·링크는 앱에서 운영자가 넣는다 |
 | 2026-10-06 | Instagram `@mellow.call` | 소개를 영어로 바꿈. 이름(`mellow \| AI 전화 회화`)은 그대로이고, 앱에서 영어 이름으로 바꾼다 |
+| 2026-10-06 | Instagram `@mellow.call_kr` | 운영자 승인으로 프로페셔널(비즈니스) 계정 전환(카테고리 소프트웨어, 연락처 비공개), Buffer 권한 허용 |
+| 2026-10-06 | Console mellow | Instagram 한국어 = Buffer `@mellow.call_kr`, Instagram 영어 = Buffer `@mellow.call`. X 한국어 = `@mellow_call`(그대로), Threads 미연결 |
