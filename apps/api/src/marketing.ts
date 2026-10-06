@@ -69,6 +69,7 @@ export class MarketingController {
       r.operator.id,
       input.revision,
       input.token,
+      input.language,
     );
   }
   @Post('projects/:slug/channels/:channel/buffer') connectBuffer(
@@ -85,6 +86,7 @@ export class MarketingController {
       r.operator.id,
       input.revision,
       input.channelId,
+      input.language,
     );
   }
   @Post('projects/:slug/channels/:channel/disconnect') disconnect(
@@ -93,12 +95,14 @@ export class MarketingController {
     @Param('channel') channel: string,
     @Body() body: unknown,
   ) {
+    const input = parse(connectionRevision, body);
     return this.store.disconnect(
       r.operator.workspaceId,
       slug,
       parse(channelSchema, channel),
       r.operator.id,
-      parse(connectionRevision, body).revision,
+      input.revision,
+      input.language,
     );
   }
   @Post('projects/:slug/channels/:channel/verify') verifyChannel(
@@ -107,11 +111,13 @@ export class MarketingController {
     @Param('channel') channel: string,
     @Body() body: unknown,
   ) {
+    const input = parse(connectionRevision, body);
     return this.store.verifyConnection(
       r.operator.workspaceId,
       slug,
       parse(channelSchema, channel),
-      parse(connectionRevision, body).revision,
+      input.revision,
+      input.language,
     );
   }
   @Post('projects/:slug/channels/:channel/authorize') authorize(
@@ -120,13 +126,15 @@ export class MarketingController {
     @Param('channel') channel: string,
     @Body() body: unknown,
   ) {
+    const input = parse(connectionRevision, body);
     return this.store.beginOAuth(
       r.operator.workspaceId,
       slug,
       parse(channelSchema, channel),
       r.operator.id,
-      parse(connectionRevision, body).revision,
+      input.revision,
       origin(),
+      input.language,
     );
   }
   @Get('channels/:channel/callback') async callback(

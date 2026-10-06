@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Sparkles } from 'lucide-react';
 import {
   GENERATED_VIDEO_SECONDS,
+  LANGUAGES,
+  LANGUAGE_LABELS,
   CHANNEL_LABELS,
   type Project,
   type Channel,
@@ -233,8 +235,11 @@ export function AutoCreator({ project, manual }: { project: Project; manual: Rea
                       change();
                     }}
                   >
-                    <option value="ko">한국어</option>
-                    <option value="en">English</option>
+                    {LANGUAGES.map((l) => (
+                      <option key={l} value={l}>
+                        {LANGUAGE_LABELS[l]}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>

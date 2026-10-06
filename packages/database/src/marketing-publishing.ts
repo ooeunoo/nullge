@@ -1,9 +1,9 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { DataSource } from 'typeorm';
-import type { Post } from '@nullge/contracts';
+import { CHANNEL_LABELS, LANGUAGE_LABELS, type Channel, type Language, type Post } from '@nullge/contracts';
 import { Store, StoreError } from './store';
 import { unseal } from './marketing-security';
-import { MarketingStore } from './marketing-store';
+import { MarketingStore, channelContext } from './marketing-store';
 import { bufferPost, createBufferPost } from './marketing-buffer';
 import { providerJson, socialIdentity, ProviderError } from './marketing-providers';
 export function validatePublish(post: Post) {
@@ -84,17 +84,23 @@ export class MarketingPublisher {
         throw new StoreError(400, '최신 제품 정보와 콘텐츠 검토를 먼저 완료해 주세요.');
       validatePublish(post);
       const [c] = await m.query(
-        'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 FOR UPDATE',
-        [w, p.id, post.channel],
+        'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4 FOR UPDATE',
+        [w, p.id, post.channel, post.language],
       );
-      if (!c?.ciphertext || c.revision !== connectionRevision)
-        throw new StoreError(409, '게시할 계정을 다시 확인해 주세요.');
+      // A post goes only to the account of its own language, never to another language's account.
+      if (!c?.ciphertext)
+        throw new StoreError(
+          400,
+          `${LANGUAGE_LABELS[post.language as Language]} ${CHANNEL_LABELS[post.channel as Channel]} 계정을 먼저 연결해 주세요.`,
+        );
+      if (c.revision !== connectionRevision) throw new StoreError(409, '게시할 계정을 다시 확인해 주세요.');
       if (
         c.expiresAt &&
         new Date(c.expiresAt).getTime() < Date.now() + 60000 &&
         !(
           post.channel === 'x' &&
-          unseal<{ refreshToken?: string }>(c.ciphertext, `channel:${w}:${p.id}:x`).refreshToken
+          unseal<{ refreshToken?: string }>(c.ciphertext, channelContext(w, p.id, 'x', post.language))
+            .refreshToken
         )
       )
         throw new StoreError(400, 'SNS 인증이 만료되었거나 곧 만료됩니다. 채널에서 다시 인증해 주세요.');
@@ -184,8 +190,8 @@ export class MarketingPublisher {
         provider?: 'direct' | 'buffer';
       };
       const [c] = await this.db.query(
-        'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3',
-        [j.workspaceId, j.projectId, p.channel],
+        'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4',
+        [j.workspaceId, j.projectId, p.channel, p.language],
       );
       if (
         !c?.ciphertext ||
@@ -200,6 +206,7 @@ export class MarketingPublisher {
           j.projectId,
           p.channel,
           j.connectionRevision,
+          p.language,
         );
         if (j.status === 'queued') {
           const mediaUrl = p.assetId ? signedAssetUrl(j.workspaceId, p.assetId) : undefined;
@@ -237,6 +244,7 @@ export class MarketingPublisher {
         j.projectId,
         p.channel,
         j.connectionRevision,
+        p.language,
       );
       const auth = `Bearer ${token}`,
         base =

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
-import { CHANNEL_LABELS, type Post, type Project, type Connection } from '@nullge/contracts';
+import { CHANNEL_LABELS, LANGUAGE_LABELS, type Post, type Project, type Connection } from '@nullge/contracts';
 import { call, message } from './shared';
 
 export function PublishPanel({ project, post }: { project: Project; post: Post }) {
@@ -11,9 +11,11 @@ export function PublishPanel({ project, post }: { project: Project; post: Post }
     [confirming, setConfirming] = useState(false);
   useEffect(() => {
     call<Connection[]>(`projects/${project.slug}/channels`)
-      .then((rows) => setConnection(rows.find((c) => c.channel === post.channel)))
+      .then((rows) =>
+        setConnection(rows.find((c) => c.channel === post.channel && c.language === post.language)),
+      )
       .catch((e) => setError(message(e)));
-  }, [project.slug, post.channel]);
+  }, [project.slug, post.channel, post.language]);
   const states = {
     queued: '게시 대기',
     creating: '미디어 준비 중',
@@ -47,7 +49,9 @@ export function PublishPanel({ project, post }: { project: Project; post: Post }
       ) : (
         <>
           <p>
-            {connection?.connected ? `게시 계정: @${connection.username}` : '이 제품에 연결된 계정이 없어요.'}
+            {connection?.connected
+              ? `게시 계정: @${connection.username}`
+              : `${LANGUAGE_LABELS[post.language]} ${CHANNEL_LABELS[post.channel]} 계정이 아직 연결되지 않았어요.`}
           </p>
           {error && (
             <p role="alert" className="notice error">

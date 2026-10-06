@@ -101,7 +101,7 @@ export function PostList({
               key={post.id}
               post={post}
               project={project}
-              connection={connections.find((c) => c.channel === post.channel)}
+              connection={connections.find((c) => c.channel === post.channel && c.language === post.language)}
               act={act}
               busy={busy}
             />

@@ -98,6 +98,21 @@ afterAll(async () => {
 }, 15000);
 
 describe('product OAuth without generation or publication', () => {
+  it('keeps the requested account language through the OAuth callback', async () => {
+    const { url } = await marketing.beginOAuth(WORKSPACE_ID, 'mellow', 'instagram', actor, 0, origin, 'en');
+    const state = new URL(url).searchParams.get('state')!;
+    mockMeta('instagram', true);
+    await marketing.completeOAuth(WORKSPACE_ID, actor, 'instagram', state, 'test-code');
+    const rows = (await marketing.connections(WORKSPACE_ID, 'mellow')).filter(
+      (r) => r.channel === 'instagram',
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ language: 'en', connected: true, username: 'mellow_test' });
+    const [raw] = await db.query(`SELECT * FROM channel_connections WHERE channel='instagram'`);
+    expect(unseal(raw.ciphertext, `channel:${WORKSPACE_ID}:${raw.projectId}:instagram:en`)).toMatchObject({
+      token: 'long-test-token',
+    });
+  });
   it.each(['instagram', 'threads'] as const)(
     'connects %s with long-lived encrypted tokens and exact callback',
     async (channel) => {

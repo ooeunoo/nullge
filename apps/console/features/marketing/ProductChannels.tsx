@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react';
 import { ArrowUpRight, Settings } from 'lucide-react';
 import {
   CHANNEL_LABELS,
+  LANGUAGES,
+  LANGUAGE_LABELS,
+  type Language,
   type Project,
   type Channel,
   type BufferChannel,
@@ -10,8 +13,26 @@ import {
 } from '@nullge/contracts';
 import { call, message } from './shared';
 
+const CHANNELS = ['x', 'threads', 'instagram'] as const;
+const key = (c: Pick<Connection, 'channel' | 'language'>) => `${c.channel}:${c.language}`;
+const empty = (channel: Channel, language: Language): Connection => ({
+  channel,
+  language,
+  provider: 'direct',
+  revision: 0,
+  userId: null,
+  username: null,
+  verifiedAt: null,
+  expiresAt: null,
+  connected: false,
+});
+
+/** One row per channel and language: a product can keep a separate account for each language. */
 export function ProductChannels({ project }: { project: Project }) {
-  const [rows, setRows] = useState<Connection[]>([]),
+  const [saved, setSaved] = useState<Connection[]>([]),
+    [added, setAdded] = useState<Connection[]>([]),
+    [addChannel, setAddChannel] = useState<Channel>('instagram'),
+    [addLanguage, setAddLanguage] = useState<Language>('en'),
     [bufferChannels, setBufferChannels] = useState<BufferChannel[]>([]),
     [selectedBuffer, setSelectedBuffer] = useState<Record<string, string>>({}),
     [tokens, setTokens] = useState<Record<string, string>>({}),
@@ -25,7 +46,7 @@ export function ProductChannels({ project }: { project: Project }) {
       call<BufferChannel[]>('settings/buffer/channels'),
     ]);
     if (connections.status === 'rejected') throw connections.reason;
-    setRows(connections.value);
+    setSaved(connections.value);
     setBufferChannels(available.status === 'fulfilled' ? available.value : []);
   };
   useEffect(() => {
@@ -39,6 +60,15 @@ export function ProductChannels({ project }: { project: Project }) {
     if (query.has('connection_error'))
       setError('SNS 인증이 취소되었습니다. 기존 계정 연결은 유지되며, 다시 연결할 수 있어요.');
   }, [path]);
+  // Saved rows first, then languages added on this screen that have no saved row yet, in channel order.
+  const rows = CHANNELS.flatMap((channel) =>
+    [...saved, ...added.filter((a) => !saved.some((s) => key(s) === key(a)))]
+      .filter((c) => c.channel === channel)
+      .sort((a, b) => LANGUAGES.indexOf(a.language) - LANGUAGES.indexOf(b.language)),
+  );
+  const free = LANGUAGES.filter((l) => !rows.some((r) => r.channel === addChannel && r.language === l));
+  const label = (c: Pick<Connection, 'channel' | 'language'>) =>
+    `${CHANNEL_LABELS[c.channel]} ${LANGUAGE_LABELS[c.language]}`;
   async function action(c: Connection, kind: string) {
     setBusy(true);
     setError('');
@@ -46,7 +76,8 @@ export function ProductChannels({ project }: { project: Project }) {
     try {
       const result = await call<{ url?: string; message?: string }>(`${path}/${c.channel}/${kind}`, {
         revision: c.revision,
-        ...(kind === 'connect' ? { token: tokens[c.channel] } : {}),
+        language: c.language,
+        ...(kind === 'connect' ? { token: tokens[key(c)] } : {}),
       });
       setTokens({});
       if (result.url) {
@@ -63,7 +94,7 @@ export function ProductChannels({ project }: { project: Project }) {
     }
   }
   async function connectBuffer(c: Connection) {
-    const channelId = selectedBuffer[c.channel];
+    const channelId = selectedBuffer[key(c)];
     if (!channelId) return;
     setBusy(true);
     setError('');
@@ -71,6 +102,7 @@ export function ProductChannels({ project }: { project: Project }) {
     try {
       const result = await call<{ message: string }>(`${path}/${c.channel}/buffer`, {
         revision: c.revision,
+        language: c.language,
         channelId,
       });
       await load();
@@ -81,7 +113,11 @@ export function ProductChannels({ project }: { project: Project }) {
       setBusy(false);
     }
   }
-  const [manualChannel, setManualChannel] = useState<Channel>('threads');
+  const [manual, setManual] = useState<{ channel: Channel; language: Language }>({
+    channel: 'threads',
+    language: 'ko',
+  });
+  const manualKey = key(manual);
   const when = (value: string | null) =>
     value ? new Date(value).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
   return (
@@ -127,14 +163,15 @@ export function ProductChannels({ project }: { project: Project }) {
             {rows.map((c) => {
               const buffer = bufferChannels.filter((channel) => channel.service === c.channel);
               return (
-                <tr key={c.channel}>
+                <tr key={key(c)}>
                   <td data-label="채널">
                     <span className="channel-name">
                       <span className="channel-symbol">
                         {c.channel === 'x' ? '𝕏' : c.channel === 'threads' ? '@' : '◎'}
                       </span>
                       <span className="channel-text">
-                        {CHANNEL_LABELS[c.channel]}
+                        {CHANNEL_LABELS[c.channel]}{' '}
+                        <span className="badge draft">{LANGUAGE_LABELS[c.language]}</span>
                         {c.connected && c.username && <span className="channel-sub">@{c.username}</span>}
                       </span>
                     </span>
@@ -186,11 +223,11 @@ export function ProductChannels({ project }: { project: Project }) {
                       {buffer.length > 0 && (
                         <span className="channel-buffer">
                           <select
-                            aria-label={`${CHANNEL_LABELS[c.channel]} Buffer 채널`}
-                            value={selectedBuffer[c.channel] || ''}
+                            aria-label={`${label(c)} Buffer 채널`}
+                            value={selectedBuffer[key(c)] || ''}
                             disabled={busy}
                             onChange={(e) =>
-                              setSelectedBuffer({ ...selectedBuffer, [c.channel]: e.target.value })
+                              setSelectedBuffer({ ...selectedBuffer, [key(c)]: e.target.value })
                             }
                           >
                             <option value="">Buffer 채널</option>
@@ -202,7 +239,7 @@ export function ProductChannels({ project }: { project: Project }) {
                           </select>
                           <button
                             className="button"
-                            disabled={busy || !selectedBuffer[c.channel]}
+                            disabled={busy || !selectedBuffer[key(c)]}
                             onClick={() => void connectBuffer(c)}
                           >
                             Buffer {c.connected ? '교체' : '연결'}
@@ -224,7 +261,7 @@ export function ProductChannels({ project }: { project: Project }) {
                             onClick={() => {
                               if (
                                 confirm(
-                                  `${project.name}의 ${CHANNEL_LABELS[c.channel]} 연결을 해제할까요? 저장된 토큰이 삭제됩니다.`,
+                                  `${project.name}의 ${label(c)} 연결을 해제할까요? 저장된 토큰이 삭제됩니다.`,
                                 )
                               )
                                 void action(c, 'disconnect');
@@ -241,6 +278,42 @@ export function ProductChannels({ project }: { project: Project }) {
             })}
           </tbody>
         </table>
+        <form
+          className="channel-add"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (free.includes(addLanguage)) setAdded([...added, empty(addChannel, addLanguage)]);
+          }}
+        >
+          <span className="muted">언어별 계정 추가</span>
+          <select
+            aria-label="채널"
+            value={addChannel}
+            disabled={busy}
+            onChange={(e) => setAddChannel(e.target.value as Channel)}
+          >
+            {CHANNELS.map((c) => (
+              <option key={c} value={c}>
+                {CHANNEL_LABELS[c]}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="언어"
+            value={addLanguage}
+            disabled={busy}
+            onChange={(e) => setAddLanguage(e.target.value as Language)}
+          >
+            {LANGUAGES.map((l) => (
+              <option key={l} value={l} disabled={!free.includes(l)}>
+                {LANGUAGE_LABELS[l]}
+              </option>
+            ))}
+          </select>
+          <button className="button" disabled={busy || !free.includes(addLanguage)}>
+            줄 추가
+          </button>
+        </form>
       </div>
       <details className="channel-manual">
         <summary>사용자 토큰으로 직접 연결 (Threads · Instagram)</summary>
@@ -248,20 +321,36 @@ export function ProductChannels({ project }: { project: Project }) {
           className="editor-form"
           onSubmit={(e) => {
             e.preventDefault();
-            const row = rows.find((r) => r.channel === manualChannel);
-            if (row) void action(row, 'connect');
+            void action(
+              rows.find((r) => key(r) === manualKey) || empty(manual.channel, manual.language),
+              'connect',
+            );
           }}
         >
           <div className="field-pair">
             <label>
               채널
               <select
-                value={manualChannel}
+                value={manual.channel}
                 disabled={busy}
-                onChange={(e) => setManualChannel(e.target.value as Channel)}
+                onChange={(e) => setManual({ ...manual, channel: e.target.value as Channel })}
               >
                 <option value="threads">Threads</option>
                 <option value="instagram">Instagram</option>
+              </select>
+            </label>
+            <label>
+              언어
+              <select
+                value={manual.language}
+                disabled={busy}
+                onChange={(e) => setManual({ ...manual, language: e.target.value as Language })}
+              >
+                {LANGUAGES.map((l) => (
+                  <option key={l} value={l}>
+                    {LANGUAGE_LABELS[l]}
+                  </option>
+                ))}
               </select>
             </label>
             <label>
@@ -271,12 +360,12 @@ export function ProductChannels({ project }: { project: Project }) {
                 autoComplete="new-password"
                 required
                 maxLength={4096}
-                value={tokens[manualChannel] || ''}
-                onChange={(e) => setTokens({ ...tokens, [manualChannel]: e.target.value })}
+                value={tokens[manualKey] || ''}
+                onChange={(e) => setTokens({ ...tokens, [manualKey]: e.target.value })}
               />
             </label>
           </div>
-          <button className="button primary" disabled={busy || !tokens[manualChannel]}>
+          <button className="button primary" disabled={busy || !tokens[manualKey]}>
             계정 확인 후 연결
           </button>
         </form>

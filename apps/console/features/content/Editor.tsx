@@ -17,6 +17,8 @@ import {
   type Post,
   type PostInput,
   type Project,
+  LANGUAGES,
+  LANGUAGE_LABELS,
 } from '@nullge/contracts';
 import { Badge } from '../../components/ui/Badge';
 import { Mark } from '../../components/ui/Mark';
@@ -180,8 +182,11 @@ export function Editor({
               <label>
                 언어
                 <select value={form.language} onChange={(e) => update('language', e.target.value)}>
-                  <option value="ko">한국어</option>
-                  <option value="en">English</option>
+                  {LANGUAGES.map((l) => (
+                    <option key={l} value={l}>
+                      {LANGUAGE_LABELS[l]}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>

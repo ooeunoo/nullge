@@ -1,6 +1,17 @@
 import { z } from 'zod';
 
 export const channelSchema = z.enum(['x', 'threads', 'instagram']);
+/** Content and account languages. A product connects one account per channel and language. */
+export const LANGUAGES = ['ko', 'en', 'ja', 'zh', 'es'] as const;
+export const languageSchema = z.enum(LANGUAGES);
+export type Language = z.infer<typeof languageSchema>;
+export const LANGUAGE_LABELS: Record<Language, string> = {
+  ko: '한국어',
+  en: '영어',
+  ja: '일본어',
+  zh: '중국어',
+  es: '스페인어',
+};
 export const MAX_POST_IMAGE_BYTES = 5 * 1024 * 1024;
 export const MAX_POST_VIDEO_BYTES = 15 * 1024 * 1024;
 export const MAX_POST_POSTER_BYTES = 1024 * 1024;
@@ -15,7 +26,7 @@ export const postInput = z
     caption: z.string().max(5000),
     brief: z.string().max(1200),
     channel: channelSchema,
-    language: z.enum(['ko', 'en']),
+    language: languageSchema,
     image: z
       .string()
       .max(Math.ceil(MAX_POST_VIDEO_BYTES / 3) * 4 + 'data:video/mp4;base64,'.length)
@@ -250,11 +261,17 @@ export interface Integrations extends Omit<IntegrationInput, 'secrets' | 'clear'
   encryptionReady: boolean;
   updatedAt: string | null;
 }
-export const connectionInput = z.object({ revision: z.number().int().nonnegative(), token: secret }).strict();
-export const connectionRevision = z.object({ revision: z.number().int().nonnegative() }).strict();
+const accountLanguage = languageSchema.default('ko');
+export const connectionInput = z
+  .object({ revision: z.number().int().nonnegative(), token: secret, language: accountLanguage })
+  .strict();
+export const connectionRevision = z
+  .object({ revision: z.number().int().nonnegative(), language: accountLanguage })
+  .strict();
 export type ConnectionProvider = 'direct' | 'buffer';
 export interface Connection {
   channel: Channel;
+  language: Language;
   provider: ConnectionProvider;
   revision: number;
   username: string | null;
@@ -273,6 +290,7 @@ export interface BufferChannel {
 export const bufferConnectionInput = z
   .object({
     revision: z.number().int().nonnegative(),
+    language: accountLanguage,
     channelId: z
       .string()
       .trim()
@@ -286,7 +304,7 @@ export const generationInput = z
     prompt: z.string().trim().max(1200).default(''),
     format: formatSchema,
     channel: channelSchema.optional(),
-    language: z.enum(['ko', 'en']).default('ko'),
+    language: languageSchema.default('ko'),
     reference: z.string().max(3_000_000).optional(),
   })
   .strict()

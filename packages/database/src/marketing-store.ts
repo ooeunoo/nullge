@@ -6,8 +6,11 @@ import type { DataSource, EntityManager } from 'typeorm';
 import {
   secretFields,
   GUIDE_LOGO_BYTES,
+  LANGUAGES,
   type TemplateRenderInput,
   type Channel,
+  type Connection,
+  type Language,
   type IntegrationInput,
   type Integrations,
   type GenerationInput,
@@ -37,6 +40,13 @@ import {
 } from './marketing-oauth';
 import { getBufferChannel, listBufferChannels } from './marketing-buffer';
 const clean = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+/**
+ * Encryption context of a channel account. Korean accounts keep the context used before language accounts existed,
+ * so their stored tokens still decrypt.
+ */
+export const channelContext = (w: string, p: string, channel: Channel, language: Language) =>
+  `channel:${w}:${p}:${channel}${language === 'ko' ? '' : `:${language}`}`;
+const tag = (language: Language) => (language === 'ko' ? '' : ` (${language})`);
 const envNames: Record<string, string> = {
   openaiKey: 'OPENAI_API_KEY',
   higgsfieldKey: 'HIGGSFIELD_API_KEY',
@@ -158,24 +168,30 @@ export class MarketingStore {
   async connections(w: string, slug: string) {
     const p = await this.store.project(w, slug);
     const rows = await this.db.query(
-      'SELECT channel,provider,revision,"userId",username,"verifiedAt","expiresAt",(ciphertext IS NOT NULL) connected FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2',
-      [w, p.id],
+      `SELECT channel,language,provider,revision,"userId",username,"verifiedAt","expiresAt",(ciphertext IS NOT NULL) connected FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 ORDER BY array_position($3::text[],language)`,
+      [w, p.id, [...LANGUAGES]],
     );
+    // Every channel lists its language accounts; a channel without any shows an empty Korean row.
     return clean(
-      (['x', 'threads', 'instagram'] as const).map(
-        (channel) =>
-          rows.find((r: any) => r.channel === channel) || {
-            channel,
-            provider: 'direct',
-            revision: 0,
-            userId: null,
-            username: null,
-            verifiedAt: null,
-            expiresAt: null,
-            connected: false,
-          },
-      ),
-    );
+      (['x', 'threads', 'instagram'] as const).flatMap((channel) => {
+        const own = rows.filter((r: any) => r.channel === channel);
+        return own.length
+          ? own
+          : [
+              {
+                channel,
+                language: 'ko',
+                provider: 'direct',
+                revision: 0,
+                userId: null,
+                username: null,
+                verifiedAt: null,
+                expiresAt: null,
+                connected: false,
+              },
+            ];
+      }),
+    ) as Connection[];
   }
   async bufferChannels(w: string): Promise<BufferChannel[]> {
     const settings = await this.settingsRow(w);
@@ -190,6 +206,7 @@ export class MarketingStore {
     actorId: string,
     revision: number,
     channelId: string,
+    language: Language = 'ko',
   ) {
     const settings = await this.settingsRow(w);
     const apiKey = this.credentials(settings).bufferApiKey;
@@ -199,83 +216,112 @@ export class MarketingStore {
       throw new StoreError(400, '선택한 Buffer 채널의 SNS 종류가 일치하지 않습니다.');
     const p = await this.store.project(w, slug);
     await this.db.transaction(async (m) => {
-      const row = await this.connectionRow(w, p.id, channel, m);
+      const row = await this.connectionRow(w, p.id, channel, m, language);
       if (row.revision !== revision)
         throw new StoreError(409, '연결 정보가 변경되었습니다. 새로고침해 주세요.');
       await m.query(
-        `UPDATE channel_connections SET provider='buffer',ciphertext=$4,"userId"=$5,username=$6,"verifiedAt"=now(),"expiresAt"=NULL,revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3`,
+        `UPDATE channel_connections SET provider='buffer',ciphertext=$4,"userId"=$5,username=$6,"verifiedAt"=now(),"expiresAt"=NULL,revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$7`,
         [
           w,
           p.id,
           channel,
-          seal({ channelId: remote.id }, `channel:${w}:${p.id}:${channel}`),
+          seal({ channelId: remote.id }, channelContext(w, p.id, channel, language)),
           remote.id,
           remote.name,
+          language,
         ],
       );
-      await this.event(m, w, p.id, actorId, `${channel} Buffer 채널 연결`);
+      await this.event(m, w, p.id, actorId, `${channel}${tag(language)} Buffer 채널 연결`);
     });
     return { message: `Buffer의 @${remote.name} 계정을 연결했어요.` };
   }
-  private async connectionRow(w: string, p: string, channel: Channel, m: EntityManager) {
+  private async connectionRow(
+    w: string,
+    p: string,
+    channel: Channel,
+    m: EntityManager,
+    language: Language = 'ko',
+  ) {
     await m.query('SELECT id FROM projects WHERE "workspaceId"=$1 AND id=$2 FOR UPDATE', [w, p]);
     const [active] = await m.query(
-      `SELECT count(*)::int n FROM posts WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND "publishStatus" IN ('queued','creating','processing','submitting')`,
-      [w, p, channel],
+      `SELECT count(*)::int n FROM posts WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4 AND "publishStatus" IN ('queued','creating','processing','submitting')`,
+      [w, p, channel, language],
     );
     if (active.n) throw new StoreError(409, '게시 작업이 완료된 뒤 채널 연결을 변경해 주세요.');
     await m.query(
-      'INSERT INTO channel_connections ("workspaceId","projectId",channel) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
-      [w, p, channel],
+      'INSERT INTO channel_connections ("workspaceId","projectId",channel,language) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+      [w, p, channel, language],
     );
     const [r] = await m.query(
-      'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 FOR UPDATE',
-      [w, p, channel],
+      'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4 FOR UPDATE',
+      [w, p, channel, language],
     );
     return r;
   }
-  async connect(w: string, slug: string, channel: Channel, actorId: string, revision: number, token: string) {
+  async connect(
+    w: string,
+    slug: string,
+    channel: Channel,
+    actorId: string,
+    revision: number,
+    token: string,
+    language: Language = 'ko',
+  ) {
     if (channel === 'x') throw new StoreError(400, 'X는 OAuth 연결 버튼을 사용해 주세요.');
     const p = await this.store.project(w, slug);
     const identity = await socialIdentity(channel, token);
     await this.db.transaction(async (m) => {
-      const row = await this.connectionRow(w, p.id, channel, m);
+      const row = await this.connectionRow(w, p.id, channel, m, language);
       if (row.revision !== revision)
         throw new StoreError(409, '채널 설정이 변경되었습니다. 새로고침해 주세요.');
       await m.query(
-        `UPDATE channel_connections SET provider='direct',ciphertext=$4,"userId"=$5,username=$6,"verifiedAt"=now(),revision=revision+1,"expiresAt"=NULL WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3`,
+        `UPDATE channel_connections SET provider='direct',ciphertext=$4,"userId"=$5,username=$6,"verifiedAt"=now(),revision=revision+1,"expiresAt"=NULL WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$7`,
         [
           w,
           p.id,
           channel,
-          seal({ token }, `channel:${w}:${p.id}:${channel}`),
+          seal({ token }, channelContext(w, p.id, channel, language)),
           identity.id,
           identity.username,
+          language,
         ],
       );
-      await this.event(m, w, p.id, actorId, `${channel} 계정 연결`);
+      await this.event(m, w, p.id, actorId, `${channel}${tag(language)} 계정 연결`);
     });
     return this.connections(w, slug);
   }
-  async disconnect(w: string, slug: string, channel: Channel, actorId: string, revision: number) {
+  async disconnect(
+    w: string,
+    slug: string,
+    channel: Channel,
+    actorId: string,
+    revision: number,
+    language: Language = 'ko',
+  ) {
     const p = await this.store.project(w, slug);
     await this.db.transaction(async (m) => {
-      const r = await this.connectionRow(w, p.id, channel, m);
+      const r = await this.connectionRow(w, p.id, channel, m, language);
       if (r.revision !== revision) throw new StoreError(409, '채널 설정이 변경되었습니다.');
       await m.query(
-        `UPDATE channel_connections SET provider='direct',ciphertext=NULL,"userId"=NULL,username=NULL,"verifiedAt"=NULL,"expiresAt"=NULL,revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3`,
-        [w, p.id, channel],
+        `UPDATE channel_connections SET provider='direct',ciphertext=NULL,"userId"=NULL,username=NULL,"verifiedAt"=NULL,"expiresAt"=NULL,revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4`,
+        [w, p.id, channel, language],
       );
       await m.query('DELETE FROM channel_oauth WHERE "workspaceId"=$1 AND "projectId"=$2', [w, p.id]);
-      await this.event(m, w, p.id, actorId, `${channel} 연결 해제`);
+      await this.event(m, w, p.id, actorId, `${channel}${tag(language)} 연결 해제`);
     });
     return this.connections(w, slug);
   }
-  async verifyConnection(w: string, slug: string, channel: Channel, revision: number) {
+  async verifyConnection(
+    w: string,
+    slug: string,
+    channel: Channel,
+    revision: number,
+    language: Language = 'ko',
+  ) {
     const p = await this.store.project(w, slug);
     const [current] = await this.db.query(
-      'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3',
-      [w, p.id, channel],
+      'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4',
+      [w, p.id, channel, language],
     );
     if (!current?.ciphertext || current.revision !== revision)
       throw new StoreError(409, '연결 정보를 새로 확인해 주세요.');
@@ -283,24 +329,27 @@ export class MarketingStore {
       const settings = await this.settingsRow(w),
         apiKey = this.credentials(settings).bufferApiKey;
       if (!apiKey) throw new StoreError(400, '공통 Buffer API 키가 없습니다.');
-      const stored = unseal<{ channelId: string }>(current.ciphertext, `channel:${w}:${p.id}:${channel}`);
+      const stored = unseal<{ channelId: string }>(
+        current.ciphertext,
+        channelContext(w, p.id, channel, language),
+      );
       const remote = await getBufferChannel(apiKey, stored.channelId);
       if (remote.service !== channel || remote.id !== current.userId)
         throw new StoreError(400, 'Buffer 채널 연결이 변경되었습니다.');
       return this.db.transaction(async (m) => {
-        const row = await this.connectionRow(w, p.id, channel, m);
+        const row = await this.connectionRow(w, p.id, channel, m, language);
         if (row.revision !== revision || row.provider !== 'buffer' || row.userId !== remote.id)
           throw new StoreError(409, '연결 정보를 새로 확인해 주세요.');
         await m.query(
-          'UPDATE channel_connections SET "verifiedAt"=now(),username=$4,revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3',
-          [w, p.id, channel, remote.name],
+          'UPDATE channel_connections SET "verifiedAt"=now(),username=$4,revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$5',
+          [w, p.id, channel, remote.name, language],
         );
         return { message: `Buffer의 @${remote.name} 연결을 확인했어요.` };
       });
     }
-    const token = await this.connectionToken(w, p.id, channel, revision);
+    const token = await this.connectionToken(w, p.id, channel, revision, language);
     return this.db.transaction(async (m) => {
-      const r = await this.connectionRow(w, p.id, channel, m);
+      const r = await this.connectionRow(w, p.id, channel, m, language);
       if (r.revision !== revision || !r.ciphertext)
         throw new StoreError(409, '연결 정보를 새로 확인해 주세요.');
       if (r.expiresAt && new Date(r.expiresAt).getTime() < Date.now())
@@ -308,26 +357,32 @@ export class MarketingStore {
       const identity = await socialIdentity(channel, token);
       if (identity.id !== r.userId) throw new StoreError(400, '연결 계정이 다릅니다. 다시 연결해 주세요.');
       await m.query(
-        'UPDATE channel_connections SET "verifiedAt"=now(),username=$4,revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3',
-        [w, p.id, channel, identity.username],
+        'UPDATE channel_connections SET "verifiedAt"=now(),username=$4,revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$5',
+        [w, p.id, channel, identity.username, language],
       );
       return {
         message: '계정 접근을 확인했어요. 게시 권한은 실제 게시 시 별도로 확인돼요.',
       };
     });
   }
-  async connectionToken(w: string, p: string, channel: Channel, revision: number): Promise<string> {
+  async connectionToken(
+    w: string,
+    p: string,
+    channel: Channel,
+    revision: number,
+    language: Language = 'ko',
+  ): Promise<string> {
     return this.db.transaction(async (m) => {
       const settings = await this.settingsRow(w, m, true);
       const [r] = await m.query(
-        'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 FOR UPDATE',
-        [w, p, channel],
+        'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4 FOR UPDATE',
+        [w, p, channel, language],
       );
       if (!r?.ciphertext || r.revision !== revision)
         throw new StoreError(409, 'SNS 연결이 변경되었습니다. 다시 확인해 주세요.');
       if (r.provider === 'buffer')
         throw new StoreError(400, 'Buffer 연결에는 직접 SNS 토큰을 사용할 수 없습니다.');
-      const context = `channel:${w}:${p}:${channel}`;
+      const context = channelContext(w, p, channel, language);
       let c = unseal<SocialTokens>(r.ciphertext, context);
       const expires = r.expiresAt ? new Date(r.expiresAt).getTime() : Infinity;
       const refreshX = channel === 'x' && expires < Date.now() + 60000;
@@ -352,8 +407,8 @@ export class MarketingStore {
           throw new StoreError(400, 'SNS 인증 갱신에 실패했습니다. 채널에서 계정을 다시 연결해 주세요.');
         }
         await m.query(
-          'UPDATE channel_connections SET ciphertext=$4,"expiresAt"=$5 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3',
-          [w, p, channel, seal(c, context), c.expiresAt],
+          'UPDATE channel_connections SET ciphertext=$4,"expiresAt"=$5 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$6',
+          [w, p, channel, seal(c, context), c.expiresAt, language],
         );
       } else if (expires <= Date.now()) {
         throw new StoreError(400, 'SNS 인증이 만료되었습니다. 다시 연결해 주세요.');
@@ -361,17 +416,26 @@ export class MarketingStore {
       return c.token;
     });
   }
-  async bufferPublishingCredentials(w: string, p: string, channel: Channel, revision: number) {
+  async bufferPublishingCredentials(
+    w: string,
+    p: string,
+    channel: Channel,
+    revision: number,
+    language: Language = 'ko',
+  ) {
     const [row] = await this.db.query(
-      'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3',
-      [w, p, channel],
+      'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4',
+      [w, p, channel, language],
     );
     if (!row?.ciphertext || row.revision !== revision || row.provider !== 'buffer')
       throw new StoreError(409, 'Buffer 채널 연결이 변경되었습니다.');
     const settings = await this.settingsRow(w),
       apiKey = this.credentials(settings).bufferApiKey;
     if (!apiKey) throw new StoreError(400, '공통 Buffer API 키가 없습니다.');
-    const { channelId } = unseal<{ channelId: string }>(row.ciphertext, `channel:${w}:${p}:${channel}`);
+    const { channelId } = unseal<{ channelId: string }>(
+      row.ciphertext,
+      channelContext(w, p, channel, language),
+    );
     if (!channelId || channelId !== row.userId)
       throw new StoreError(400, 'Buffer 채널 정보를 확인할 수 없습니다.');
     return { apiKey, channelId };
@@ -386,13 +450,14 @@ export class MarketingStore {
     actorId: string,
     revision: number,
     origin: string,
+    language: Language = 'ko',
   ) {
     const p = await this.store.project(w, slug);
     return this.db.transaction(async (m) => {
       const s = await this.settingsRow(w, m, true),
         c = this.credentials(s);
       oauthApp(channel, c);
-      const r = await this.connectionRow(w, p.id, channel, m);
+      const r = await this.connectionRow(w, p.id, channel, m, language);
       if (r.revision !== revision) throw new StoreError(409, '채널 정보를 새로고침해 주세요.');
       const state = randomBytes(32).toString('base64url'),
         verifier = randomBytes(48).toString('base64url'),
@@ -411,7 +476,7 @@ export class MarketingStore {
           actorId,
           r.revision,
           s.revision,
-          seal({ channel, verifier, redirectUri }, `oauth:${hash}`),
+          seal({ channel, language, verifier, redirectUri }, `oauth:${hash}`),
         ],
       );
       return { url: authorizeUrl(channel, c, redirectUri, state, verifier) };
@@ -434,10 +499,12 @@ export class MarketingStore {
       [oauthHash(channel, state), w, actorId],
     );
     if (!attempt) throw new StoreError(400, 'SNS 인증이 만료되었거나 이미 사용되었습니다.');
-    const pending = unseal<{ channel?: Channel; verifier: string; redirectUri: string }>(
+    const pending = unseal<{ channel?: Channel; language?: Language; verifier: string; redirectUri: string }>(
       attempt.ciphertext,
       `oauth:${attempt.hash}`,
     );
+    // Attempts started before language accounts existed carry no language: they were Korean.
+    const language = pending.language || 'ko';
     if ((pending.channel || 'x') !== channel)
       throw new StoreError(400, 'SNS 인증 서비스가 일치하지 않습니다.');
     const [p] = await this.db.query('SELECT slug FROM projects WHERE id=$1 AND "workspaceId"=$2', [
@@ -449,7 +516,7 @@ export class MarketingStore {
     // Check revisions before exchanging a code and again before saving its result.
     const s = await this.db.transaction(async (m) => {
       const settings = await this.settingsRow(w, m, true),
-        r = await this.connectionRow(w, attempt.projectId, channel, m);
+        r = await this.connectionRow(w, attempt.projectId, channel, m, language);
       if (settings.revision !== attempt.settingsRevision || r.revision !== attempt.revision)
         throw new StoreError(409, '연결 설정이 변경되었습니다. 다시 연결해 주세요.');
       return settings;
@@ -466,22 +533,23 @@ export class MarketingStore {
     const identity = await socialIdentity(channel, tokens.token);
     await this.db.transaction(async (m) => {
       const latest = await this.settingsRow(w, m, true),
-        r = await this.connectionRow(w, attempt.projectId, channel, m);
+        r = await this.connectionRow(w, attempt.projectId, channel, m, language);
       if (latest.revision !== attempt.settingsRevision || r.revision !== attempt.revision)
         throw new StoreError(409, '연결 설정이 변경되었습니다. 다시 연결해 주세요.');
       await m.query(
-        `UPDATE channel_connections SET provider='direct',ciphertext=$4,"userId"=$5,username=$6,"expiresAt"=$7,"verifiedAt"=now(),revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3`,
+        `UPDATE channel_connections SET provider='direct',ciphertext=$4,"userId"=$5,username=$6,"expiresAt"=$7,"verifiedAt"=now(),revision=revision+1 WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$8`,
         [
           w,
           attempt.projectId,
           channel,
-          seal(tokens, `channel:${w}:${attempt.projectId}:${channel}`),
+          seal(tokens, channelContext(w, attempt.projectId, channel, language)),
           identity.id,
           identity.username,
           tokens.expiresAt,
+          language,
         ],
       );
-      await this.event(m, w, attempt.projectId, actorId, `${channel} OAuth 계정 연결`);
+      await this.event(m, w, attempt.projectId, actorId, `${channel}${tag(language)} OAuth 계정 연결`);
     });
     return { slug: p.slug as string, connected: true };
   }
