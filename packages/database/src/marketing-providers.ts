@@ -28,12 +28,30 @@ export class ProviderError extends StoreError {
   constructor(
     public readonly uncertain: boolean,
     status = 502,
+    detail = '',
   ) {
     super(
       502,
-      `외부 API 요청에 실패했습니다 (${status}). ${uncertain ? '처리 여부가 불명확하여 자동 재시도하지 않습니다.' : '연결 권한과 잔액을 확인해 주세요.'}`,
+      `외부 API 요청에 실패했습니다 (${status}${detail ? ` · ${detail}` : ''}). ${uncertain ? '처리 여부가 불명확하여 자동 재시도하지 않습니다.' : '연결 권한과 잔액을 확인해 주세요.'}`,
     );
   }
+}
+/** Host plus the provider's own short error text, so a rejected request says what was wrong. */
+async function failureDetail(url: string, r: Response) {
+  let text = '';
+  try {
+    const body: any = await r.json();
+    const e = body?.error;
+    text = typeof e === 'string' ? e : e?.message || body?.message || body?.error_description || '';
+  } catch {
+    await r.body?.cancel().catch(() => undefined);
+  }
+  // Provider messages never echo credentials, but keep them short and single-line anyway.
+  const clean = String(text)
+    .replace(/\s+/g, ' ')
+    .replace(/[A-Za-z0-9_\-]{32,}/g, '…')
+    .slice(0, 160);
+  return [new URL(url).hostname, clean].filter(Boolean).join(': ');
 }
 export async function providerJson<T>(
   url: string,
@@ -67,10 +85,8 @@ export async function providerJson<T>(
   } catch {
     throw new ProviderError(method !== 'GET', 0);
   }
-  if (!r.ok) {
-    await r.body?.cancel();
-    throw new ProviderError(method !== 'GET' && r.status >= 500, r.status);
-  }
+  if (!r.ok)
+    throw new ProviderError(method !== 'GET' && r.status >= 500, r.status, await failureDetail(url, r));
   try {
     return (await r.json()) as T;
   } catch {
