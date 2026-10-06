@@ -501,7 +501,7 @@ export async function renderMedia(
       'POST',
       {
         instances: [{ prompt }],
-        parameters: { aspectRatio: '9:16', resolution: '720p', durationSeconds: String(VIDEO_SECONDS) },
+        parameters: { aspectRatio: '9:16', resolution: '720p', durationSeconds: VIDEO_SECONDS },
       },
     );
     // A submitted request we cannot identify may still be billed: never resubmit it.

@@ -26,7 +26,7 @@ it('submits a 9:16 Veo request with the key header and returns the operation nam
   expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
   expect(JSON.parse(String(init.body))).toEqual({
     instances: [{ prompt: 'A rainy street at dusk' }],
-    parameters: { aspectRatio: '9:16', resolution: '720p', durationSeconds: String(VIDEO_SECONDS) },
+    parameters: { aspectRatio: '9:16', resolution: '720p', durationSeconds: VIDEO_SECONDS },
   });
 });
 
