@@ -25,8 +25,8 @@
 |---|---|---|---|---|---|
 | ClipIt | ko | `clipit.kr` | `clipit_kr` | ClipIt 클립잇 | https://clipit.studio/ |
 | ClipIt | en | `clipit.studio` | `clipitstudio` | ClipIt | https://clipit.studio/ |
-| mellow | ko | `mellow.call` (기존) | `mellow_call` (기존) | 기존 유지 | https://www.mellowcall.com/ |
-| mellow | en | `mellow.call.en` | `mellowcall_en` | mellow — AI speaking practice | https://www.mellowcall.com/ |
+| mellow | ko | `mellow.call_kr` (2026-10-06 생성) | — | mellow \| AI 전화 회화 | https://www.mellowcall.com/ |
+| mellow | en | `mellow.call` (기존 계정을 글로벌로 전환) | `mellow_call` (기존) | mellow \| AI speaking practice | https://www.mellowcall.com/ |
 | 다락방 카메라 | ko | `atticcamera.kr` | `atticcamera_kr` | 다락방 카메라 | https://atticcamera.nullge.com/ |
 | 다락방 카메라 | en | `atticcamera.app` | `atticcamera_app` | Attic Camera | https://atticcamera.nullge.com/ |
 | Kept | ko | `kept.bible.kr` | `keptbible_kr` | Kept 매일 성경과 기도 | https://kept.nullge.com/ |
@@ -34,7 +34,7 @@
 | 두토리 | ko | `dotori.kr` | `dotori_kr` | 두토리 다정한 하루 플래너 | https://dotori.nullge.com/ko/ |
 | 두토리 | en | `dotori.planner` | `dotoriplanner` | Dotori: Gentle Day Planner | https://dotori.nullge.com/ |
 
-mellow는 한국어로 쓰던 기존 계정(`@mellow.call`, `@mellow_call`)을 한국어판으로 두고, 영어판만 새로 만든다.
+아이디 규칙(2026-10-06 운영자 결정): 글로벌(영어) 계정은 꼬리 없이, 한국어 계정은 `_kr`을 붙인다(`@nike` / `@nikekorea` 방식). mellow는 기존 `@mellow.call`을 영어 글로벌 계정으로 바꾸고 한국어 `@mellow.call_kr`을 새로 만들었다. 기존 한국어 게시물 4개는 `@mellow.call`에 그대로 남아 있다. 운영자가 이미 만든 Instagram 계정은 `clipit_studio`, `clipit_studio_kr`, `attic.camera`, `attic.camera_kr`이다. 다른 제품의 아이디는 이 이름에 맞춰 표를 고친다.
 
 ## 소개글
 
@@ -102,3 +102,5 @@ Type like you talk — dates and times just work.
 | 날짜 | 계정 | 상태 |
 |---|---|---|
 | 2026-10-03 | 전체 | 이미지와 문구 준비 완료. 운영자 가입 대기 |
+| 2026-10-06 | Instagram `@mellow.call_kr` | 한국어 소개(기존 `@mellow.call` 문구)와 프로필 사진 저장. 이름·링크는 앱에서 운영자가 넣는다 |
+| 2026-10-06 | Instagram `@mellow.call` | 소개를 영어로 바꿈. 이름(`mellow \| AI 전화 회화`)은 그대로이고, 앱에서 영어 이름으로 바꾼다 |
