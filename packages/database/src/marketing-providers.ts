@@ -179,7 +179,7 @@ export function planInstructions(project: Project, withHistory = false) {
     instructions +
     hooked +
     (withHistory
-      ? `\nInstead of one post, return exactly 3 distinct finished candidates, strongest first. A blank prompt means choose a useful topic yourself from the product facts and audience. Compare against every item in contentHistory: avoid repeating its topic + angle, key message, hook or visual composition, even with paraphrases or a different format. Each candidate must explore a different angle from the other candidates. Keep each caption <=300 Unicode characters (X still <=100), mediaPrompt <=700 English characters. Include compact topic, angle, keyMessage and visualConcept descriptors, each <=160 characters, in Korean regardless of caption language so history is comparable across languages. Also return pillar (the guide pillar name, or empty), headline (array of 0–2 lines; empty unless a poster template is described) and subline (string, may be empty). visualConcept is empty for text. Do not invent current events or time-sensitive offers. The app will select one candidate before rendering any media.`
+      ? `\nInstead of one post, return exactly 3 distinct finished candidates, strongest first. A blank prompt means choose a useful topic yourself from the product facts and audience. Compare against every item in contentHistory: avoid repeating its topic + angle, key message, hook or visual composition, even with paraphrases or a different format. Each candidate must explore a different angle from the other candidates. Keep each caption <=300 Unicode characters (X still <=100), mediaPrompt <=700 English characters. Include compact topic, angle, keyMessage and visualConcept descriptors, each <=160 characters, in Korean regardless of caption language so history is comparable across languages. Also return pillar (the guide pillar name, or empty), headline (array of 0–2 lines; empty unless a poster template is described) and subline (string, may be empty). visualConcept describes the image or video composition and is required for image and video; leave it empty only for text. Do not invent current events or time-sensitive offers. The app will select one candidate before rendering any media.`
       : '')
   );
 }
@@ -308,10 +308,8 @@ export async function planContent(
     if (history)
       for (const key of ['topic', 'angle', 'keyMessage', 'visualConcept'] as const) {
         const value = result[key];
-        if (
-          typeof value !== 'string' ||
-          (!(key === 'visualConcept' && input.format === 'text') && !value.trim())
-        )
+        // A missing visual descriptor is derived from the media prompt below instead of failing the run.
+        if (typeof value !== 'string' || (key !== 'visualConcept' && !value.trim()))
           issues.push(`${key} 없음`);
       }
     return issues;
@@ -345,7 +343,10 @@ export async function planContent(
             topic: result.topic!.trim().slice(0, 160),
             angle: result.angle!.trim().slice(0, 160),
             keyMessage: result.keyMessage!.trim().slice(0, 160),
-            visualConcept: input.format === 'text' ? '' : result.visualConcept!.trim().slice(0, 160),
+            visualConcept:
+              input.format === 'text'
+                ? ''
+                : (result.visualConcept!.trim() || result.mediaPrompt.trim()).slice(0, 160),
           }
         : {}),
       caption: result.caption,

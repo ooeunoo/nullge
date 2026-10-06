@@ -83,3 +83,34 @@ it('drops a malformed candidate and names the problem when none remain', async (
     planContent({ openaiKey: 'test-not-real' }, 'gpt-4o-mini', project, input, []),
   ).rejects.toMatchObject({ status: 400, message: expect.stringContaining('미디어 지시 없음') });
 });
+
+it('derives an empty media visual descriptor from the media prompt', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                finish_reason: 'stop',
+                message: {
+                  content: JSON.stringify({
+                    candidates: [0, 1, 2].map((i) => ({ ...candidate(i), visualConcept: '' })),
+                  }),
+                },
+              },
+            ],
+          }),
+        ),
+    ),
+  );
+  const { candidates } = await planContent(
+    { openaiKey: 'test-not-real' },
+    'gpt-4o-mini',
+    project,
+    { prompt: '', format: 'video', channel: 'instagram', language: 'ko' },
+    [],
+  );
+  expect(candidates[0]!.visualConcept).toBe('A bedroom at dawn, a phone rings.');
+});
