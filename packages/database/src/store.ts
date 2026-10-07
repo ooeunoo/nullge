@@ -67,9 +67,12 @@ export class Store {
   async dashboard(workspaceId: string) {
     const [projects, posts, activities] = await Promise.all([
       this.db.query('SELECT * FROM projects WHERE "workspaceId"=$1 ORDER BY name', [workspaceId]),
-      this.db.query('SELECT * FROM posts WHERE "workspaceId"=$1 ORDER BY "updatedAt" DESC LIMIT 200', [
-        workspaceId,
-      ]),
+      this.db.query(
+        `SELECT p.*, CASE WHEN x."postId" IS NULL THEN NULL ELSE to_jsonb(x) - 'postId' - 'recordedBy' END metrics
+         FROM posts p LEFT JOIN post_metrics x ON x."postId"=p.id
+         WHERE p."workspaceId"=$1 ORDER BY p."updatedAt" DESC LIMIT 200`,
+        [workspaceId],
+      ),
       this.db.query(
         'SELECT id, "projectId", action, title, "createdAt" FROM events WHERE "workspaceId"=$1 ORDER BY "createdAt" DESC LIMIT 30',
         [workspaceId],

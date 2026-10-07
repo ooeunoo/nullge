@@ -3,7 +3,7 @@
   "serviceVersion": "0.1.0",
   "activeFeature": "marketing-workspace",
   "completedFeatures": [],
-  "nextAction": "marketing-workspace 2단계(메시지 실험): 콘텐츠 메시지 꼬리표와 메시지별 반응 비교. 1단계(이번 주 + 예약 게시)는 운영 배포 후 확인",
+  "nextAction": "marketing-workspace 3단계: 직접 해 주셔야 해요 목록, 캘린더(시즌·피처링 마감), 예산. 운영 mellow에 메시지 A·B·C 생성과 초안 꼬리표 달기",
   "blockers": [
     "저장소 public 유지 여부와 .credentials 암호화 커밋 방식 결정 필요",
     "하네스 고정 계정 이메일이 public 저장소 파일에 포함됨(harness.config.json, platforms.json); 처리 방식 결정 필요"

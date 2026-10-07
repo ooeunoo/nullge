@@ -179,6 +179,8 @@ export interface Post extends Omit<PostInput, 'image' | 'poster'> {
     'queued' | 'creating' | 'processing' | 'submitting' | 'published' | 'failed' | 'uncertain' | null;
   publishError?: string | null;
   publishedUrl?: string | null;
+  messageId?: string | null;
+  metrics?: PostMetrics | null;
   /** Planned publishing time; valid only while scheduledRevision equals revision. */
   scheduledAt?: string | null;
   scheduledRevision?: number | null;
@@ -340,6 +342,55 @@ export type ScheduleInput = z.infer<typeof scheduleInput>;
 export const isScheduled = (
   p: Pick<Post, 'scheduledAt' | 'scheduledRevision' | 'revision' | 'status' | 'publishStatus'>,
 ) => !!p.scheduledAt && p.scheduledRevision === p.revision && p.status === 'approved' && !p.publishStatus;
+export const MESSAGE_STATUSES = ['testing', 'winner', 'dropped'] as const;
+export type MessageStatus = (typeof MESSAGE_STATUSES)[number];
+export const MESSAGE_STATUS_LABELS: Record<MessageStatus, string> = {
+  testing: '시험 중',
+  winner: '이긴 메시지',
+  dropped: '그만둠',
+};
+export const messageInput = z
+  .object({ label: z.string().trim().min(1).max(60), description: z.string().trim().max(300).default('') })
+  .strict();
+export const messageUpdate = z
+  .object({
+    label: z.string().trim().min(1).max(60).optional(),
+    description: z.string().trim().max(300).optional(),
+    status: z.enum(MESSAGE_STATUSES).optional(),
+  })
+  .strict();
+export const postMessageInput = z.object({ messageId: z.uuid().nullable() }).strict();
+const count = z.number().int().min(0).max(1_000_000_000);
+export const metricsInput = z
+  .object({
+    reach: count,
+    saves: count,
+    shares: count,
+    likes: count.default(0),
+    comments: count.default(0),
+    profileVisits: count.default(0),
+    linkClicks: count.default(0),
+  })
+  .strict();
+export type PostMetrics = z.infer<typeof metricsInput> & { recordedAt?: string };
+/** One message being tested for a product, with the results of its published posts. */
+export interface ContentMessage {
+  id: string;
+  label: string;
+  description: string;
+  status: MessageStatus;
+  posts: number;
+  published: number;
+  measured: number;
+  reach: number;
+  saves: number;
+  shares: number;
+  profileVisits: number;
+  linkClicks: number;
+}
+/** The comparison the research recommends: saves plus shares per reach. Null until something was measured. */
+export const responseRate = (m: Pick<ContentMessage, 'reach' | 'saves' | 'shares'>) =>
+  m.reach > 0 ? (m.saves + m.shares) / m.reach : null;
 export const generationConfirm = z.object({ quoteId: z.uuid(), confirmed: z.literal(true) }).strict();
 export const publishConfirm = z
   .object({

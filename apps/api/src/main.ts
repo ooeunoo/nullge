@@ -17,7 +17,14 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { json, type Request, type Response } from 'express';
-import { database, Store, StoreError, MarketingStore, MarketingPublisher } from '@nullge/database';
+import {
+  database,
+  Store,
+  StoreError,
+  MarketingStore,
+  MarketingPublisher,
+  MessageStore,
+} from '@nullge/database';
 import { MarketingController, PublicAssetController } from './marketing';
 import {
   postInput,
@@ -26,6 +33,10 @@ import {
   revisionInput,
   publishConfirm,
   scheduleInput,
+  messageInput,
+  messageUpdate,
+  postMessageInput,
+  metricsInput,
   externalPublication,
   POST_BODY_LIMIT,
 } from '@nullge/contracts';
@@ -64,7 +75,26 @@ class ConsoleController {
   constructor(
     @Inject('STORE') private readonly store: Store,
     @Inject('PUBLISHER') private readonly publisher: MarketingPublisher,
+    @Inject('MESSAGES') private readonly messages: MessageStore,
   ) {}
+  @Get('projects/:slug/messages') listMessages(@Req() r: AuthenticatedRequest, @Param('slug') slug: string) {
+    return this.messages.list(r.operator.workspaceId, slug);
+  }
+  @Post('projects/:slug/messages') createMessage(
+    @Req() r: AuthenticatedRequest,
+    @Param('slug') slug: string,
+    @Body() body: unknown,
+  ) {
+    return this.messages.create(r.operator.workspaceId, slug, r.operator.id, parse(messageInput, body));
+  }
+  @Patch('projects/:slug/messages/:id') updateMessage(
+    @Req() r: AuthenticatedRequest,
+    @Param('slug') slug: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: unknown,
+  ) {
+    return this.messages.update(r.operator.workspaceId, slug, id, r.operator.id, parse(messageUpdate, body));
+  }
   @Get('dashboard') async dashboard(@Req() request: AuthenticatedRequest) {
     return {
       ...(await this.store.dashboard(request.operator.workspaceId)),
@@ -94,6 +124,22 @@ class ConsoleController {
     @Param('action') action: string,
     @Body() body: unknown,
   ) {
+    if (action === 'message')
+      return this.messages.tag(
+        r.operator.workspaceId,
+        slug,
+        id,
+        r.operator.id,
+        parse(postMessageInput, body).messageId,
+      );
+    if (action === 'metrics')
+      return this.messages.recordMetrics(
+        r.operator.workspaceId,
+        slug,
+        id,
+        r.operator.id,
+        parse(metricsInput, body),
+      );
     if (action === 'schedule') {
       const input = parse(scheduleInput, body);
       return this.publisher.schedule(
@@ -203,6 +249,7 @@ async function run() {
       { provide: 'STORE', useValue: new Store(db) },
       { provide: 'MARKETING', useValue: new MarketingStore(db) },
       { provide: 'PUBLISHER', useValue: new MarketingPublisher(db) },
+      { provide: 'MESSAGES', useValue: new MessageStore(db) },
       AuthService,
       SessionGuard,
     ],

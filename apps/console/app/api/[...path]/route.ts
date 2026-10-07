@@ -7,12 +7,14 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   // Media fetchers (Buffer, Instagram) probe with HEAD and read video in byte ranges.
   const read = request.method === 'GET' || request.method === 'HEAD';
   const allowed = read
-    ? /^(dashboard|settings\/(integrations|buffer\/channels)|channels\/(x|threads|instagram)\/callback|(public-assets|assets)\/[a-f0-9-]{36}|projects\/[a-z0-9-]+\/(channels|generations)|auth\/(options|google|google\/callback))$/.test(
+    ? /^(dashboard|settings\/(integrations|buffer\/channels)|channels\/(x|threads|instagram)\/callback|(public-assets|assets)\/[a-f0-9-]{36}|projects\/[a-z0-9-]+\/(channels|generations|messages)|auth\/(options|google|google\/callback))$/.test(
         route,
       )
     : request.method === 'PATCH'
-      ? /^(settings\/integrations|projects\/[a-z0-9-]+\/(profile|posts\/[a-f0-9-]{36}))$/.test(route)
-      : /^(settings\/integrations\/verify|auth\/(local|logout)|projects\/[a-z0-9-]+\/(channels\/(x|threads|instagram)\/(connect|disconnect|verify|authorize|buffer)|generations\/(quote|confirm)|posts|profile\/review|guide\/logo|templates\/[a-f0-9-]{36}|posts\/[a-f0-9-]{36}\/(approve|reopen|publish|published|delete|schedule|unschedule)))$/.test(
+      ? /^(settings\/integrations|projects\/[a-z0-9-]+\/(profile|posts\/[a-f0-9-]{36}|messages\/[a-f0-9-]{36}))$/.test(
+          route,
+        )
+      : /^(settings\/integrations\/verify|auth\/(local|logout)|projects\/[a-z0-9-]+\/(channels\/(x|threads|instagram)\/(connect|disconnect|verify|authorize|buffer)|generations\/(quote|confirm)|posts|profile\/review|guide\/logo|templates\/[a-f0-9-]{36}|messages|posts\/[a-f0-9-]{36}\/(approve|reopen|publish|published|delete|schedule|unschedule|message|metrics)))$/.test(
           route,
         );
   const headers = new Headers({ 'Cache-Control': 'private, no-store' });

@@ -2393,3 +2393,134 @@ h1 {
 .template-panel .field-hint {
   font-size: 11px;
 }
+
+.experiments {
+  margin-bottom: 24px;
+}
+.experiments h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.experiments-verdict {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 14px;
+}
+.experiments-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+.experiments-add label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.experiments-add input {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.experiments-table {
+  display: grid;
+  overflow-x: auto;
+}
+.experiments-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) 1.1fr 0.8fr 0.8fr 1.3fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  min-width: 720px;
+}
+.experiments-row.head {
+  border-top: 0;
+  color: var(--muted);
+  font-size: 12px;
+  padding-top: 0;
+}
+.experiments-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.experiments-row.dropped {
+  opacity: 0.55;
+}
+.experiments-row.winner .experiments-name strong {
+  color: #2f7a2a;
+}
+.experiments-name strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.experiments-rate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rate-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.rate-bar span {
+  display: block;
+  height: 100%;
+  background: #4caf50;
+}
+.experiments-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.post-experiment {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+.post-experiment label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.post-experiment select,
+.metrics-grid input {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+.metrics-form {
+  display: grid;
+  gap: 10px;
+}
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+.metrics-form > .button {
+  justify-self: start;
+}
+@media (max-width: 760px) {
+  .experiments-add {
+    grid-template-columns: 1fr;
+  }
+}
