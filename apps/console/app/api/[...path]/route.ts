@@ -7,14 +7,14 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   // Media fetchers (Buffer, Instagram) probe with HEAD and read video in byte ranges.
   const read = request.method === 'GET' || request.method === 'HEAD';
   const allowed = read
-    ? /^(dashboard|desk|settings\/(integrations|buffer\/channels)|channels\/(x|threads|instagram)\/callback|(public-assets|assets)\/[a-f0-9-]{36}|projects\/[a-z0-9-]+\/(channels|generations|messages)|auth\/(options|google|google\/callback))$/.test(
+    ? /^(dashboard|desk|settings\/(integrations|buffer\/channels)|channels\/(x|threads|instagram)\/callback|(public-assets|assets)\/[a-f0-9-]{36}|projects\/[a-z0-9-]+\/(channels|generations|messages|channel-tests)|auth\/(options|google|google\/callback))$/.test(
         route,
       )
     : request.method === 'PATCH'
-      ? /^(settings\/integrations|desk\/budget|projects\/[a-z0-9-]+\/(profile|posts\/[a-f0-9-]{36}|messages\/[a-f0-9-]{36}))$/.test(
+      ? /^(settings\/integrations|desk\/budget|projects\/[a-z0-9-]+\/(profile|posts\/[a-f0-9-]{36}|messages\/[a-f0-9-]{36}|channel-tests\/[a-f0-9-]{36}))$/.test(
           route,
         )
-      : /^(settings\/integrations\/verify|desk\/(tasks|spend)|desk\/tasks\/[a-f0-9-]{36}\/(done|reopen|delete)|desk\/spend\/[a-f0-9-]{36}\/delete|auth\/(local|logout)|projects\/[a-z0-9-]+\/(channels\/(x|threads|instagram)\/(connect|disconnect|verify|authorize|buffer)|generations\/(quote|confirm)|posts|profile\/review|guide\/logo|templates\/[a-f0-9-]{36}|messages|posts\/[a-f0-9-]{36}\/(approve|reopen|publish|published|delete|schedule|unschedule|message|metrics)))$/.test(
+      : /^(settings\/integrations\/verify|desk\/(tasks|spend)|desk\/tasks\/[a-f0-9-]{36}\/(done|reopen|delete)|desk\/spend\/[a-f0-9-]{36}\/delete|auth\/(local|logout)|projects\/[a-z0-9-]+\/(channels\/(x|threads|instagram)\/(connect|disconnect|verify|authorize|buffer)|generations\/(quote|confirm)|posts|profile\/review|guide\/logo|templates\/[a-f0-9-]{36}|messages|channel-tests|posts\/[a-f0-9-]{36}\/(approve|reopen|publish|published|delete|schedule|unschedule|message|metrics)))$/.test(
           route,
         );
   const headers = new Headers({ 'Cache-Control': 'private, no-store' });

@@ -464,6 +464,34 @@ export interface Desk {
   generationUsd: number;
   monthlyCapKrw: number | null;
 }
+export const CHANNEL_TEST_STATUSES = ['idea', 'testing', 'keep', 'stopped'] as const;
+export type ChannelTestStatus = (typeof CHANNEL_TEST_STATUSES)[number];
+export const CHANNEL_TEST_LABELS: Record<ChannelTestStatus, string> = {
+  idea: '후보',
+  testing: '시험 중',
+  keep: '유지',
+  stopped: '중단',
+};
+export const channelTestInput = z
+  .object({
+    name: z.string().trim().min(1).max(60),
+    status: z.enum(CHANNEL_TEST_STATUSES).default('testing'),
+    startedOn: isoDay.nullable().default(null),
+    endsOn: isoDay.nullable().default(null),
+    goal: z.string().trim().max(300).default(''),
+    result: z.string().trim().max(500).default(''),
+  })
+  .strict();
+export const channelTestUpdate = channelTestInput.partial().strict();
+export interface ChannelTest {
+  id: string;
+  name: string;
+  status: ChannelTestStatus;
+  startedOn: string | null;
+  endsOn: string | null;
+  goal: string;
+  result: string;
+}
 /** Fixed rate for comparing USD generation estimates with a KRW budget; shown to the operator. */
 export const KRW_PER_USD = 1400;
 export const generationConfirm = z.object({ quoteId: z.uuid(), confirmed: z.literal(true) }).strict();

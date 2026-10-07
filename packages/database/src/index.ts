@@ -13,6 +13,7 @@ import { ChannelLanguages1790985600000 } from './channel-language-migration';
 import { ScheduledPublishing1791072000000 } from './schedule-migration';
 import { MessageExperiments1791158400000 } from './message-migration';
 import { OperatorDesk1791244800000 } from './desk-migration';
+import { ChannelBoard1791331200000 } from './channel-board-migration';
 import { VideoPosters1790560000000 } from './video-poster-migration';
 export { MarketingStore } from './marketing-store';
 export { MarketingWorker } from './marketing-worker';
@@ -23,6 +24,7 @@ export { WORKSPACE_ID } from './migration';
 export { Store, StoreError } from './store';
 export { MessageStore } from './message-store';
 export { DeskStore } from './desk-store';
+export { ChannelBoardStore } from './channel-board-store';
 export { seedDevelopment } from './seed';
 export function database(url = process.env.DATABASE_URL) {
   if (!url) throw new Error('DATABASE_URL is required');
@@ -46,6 +48,7 @@ export function database(url = process.env.DATABASE_URL) {
       ScheduledPublishing1791072000000,
       MessageExperiments1791158400000,
       OperatorDesk1791244800000,
+      ChannelBoard1791331200000,
     ],
     migrationsTableName: 'nullge_migrations',
     extra: { max: 8, connectionTimeoutMillis: 5000 },

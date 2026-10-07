@@ -21,6 +21,7 @@ import { AutoCreator } from '../marketing/AutoCreator';
 import { GenerationHistory } from '../marketing/GenerationHistory';
 import { PublishPanel } from '../marketing/PublishPanel';
 import { MessageExperiments } from '../marketing/MessageExperiments';
+import { ChannelBoard } from '../marketing/ChannelBoard';
 import { PostExperiment } from '../marketing/PostExperiment';
 import { SharedSettings } from '../marketing/SharedSettings';
 import { Overview } from '../overview/Overview';
@@ -313,6 +314,7 @@ export function Console({ route }: { route: string[] }) {
                 ) : (
                   <>
                     <MessageExperiments project={project} />
+                    <ChannelBoard project={project} />
                     <PostList projects={[project]} posts={content} project={project} act={act} busy={busy} />
                     <details className="history-details">
                       <summary>자동 생성 작업 이력</summary>

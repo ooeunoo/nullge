@@ -3,7 +3,7 @@
   "serviceVersion": "0.1.0",
   "activeFeature": "marketing-workspace",
   "completedFeatures": [],
-  "nextAction": "marketing-workspace 4단계(채널 보드). 운영 로그인 뒤: mellow 메시지 A·B·C와 초안 꼬리표, 직접 할 일·마감·이번 달 비용과 상한 입력",
+  "nextAction": "marketing-workspace 1~4단계 배포 완료. 운영 로그인 뒤 mellow 초기 데이터 입력(메시지 A·B·C와 초안 꼬리표, 채널 보드, 직접 할 일·마감, 이번 달 비용과 상한). 이후 인사이트 자동 수집 검토",
   "blockers": [
     "저장소 public 유지 여부와 .credentials 암호화 커밋 방식 결정 필요",
     "하네스 고정 계정 이메일이 public 저장소 파일에 포함됨(harness.config.json, platforms.json); 처리 방식 결정 필요"

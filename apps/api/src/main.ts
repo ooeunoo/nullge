@@ -25,6 +25,7 @@ import {
   MarketingPublisher,
   MessageStore,
   DeskStore,
+  ChannelBoardStore,
 } from '@nullge/database';
 import { MarketingController, PublicAssetController } from './marketing';
 import {
@@ -41,6 +42,8 @@ import {
   taskInput,
   spendInput,
   budgetInput,
+  channelTestInput,
+  channelTestUpdate,
   externalPublication,
   POST_BODY_LIMIT,
 } from '@nullge/contracts';
@@ -81,7 +84,29 @@ class ConsoleController {
     @Inject('PUBLISHER') private readonly publisher: MarketingPublisher,
     @Inject('MESSAGES') private readonly messages: MessageStore,
     @Inject('DESK') private readonly desk: DeskStore,
+    @Inject('BOARD') private readonly board: ChannelBoardStore,
   ) {}
+  @Get('projects/:slug/channel-tests') channelTests(
+    @Req() r: AuthenticatedRequest,
+    @Param('slug') slug: string,
+  ) {
+    return this.board.list(r.operator.workspaceId, slug);
+  }
+  @Post('projects/:slug/channel-tests') addChannelTest(
+    @Req() r: AuthenticatedRequest,
+    @Param('slug') slug: string,
+    @Body() body: unknown,
+  ) {
+    return this.board.create(r.operator.workspaceId, slug, parse(channelTestInput, body));
+  }
+  @Patch('projects/:slug/channel-tests/:id') updateChannelTest(
+    @Req() r: AuthenticatedRequest,
+    @Param('slug') slug: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: unknown,
+  ) {
+    return this.board.update(r.operator.workspaceId, slug, id, parse(channelTestUpdate, body));
+  }
   @Get('desk') getDesk(@Req() r: AuthenticatedRequest) {
     return this.desk.desk(r.operator.workspaceId);
   }
@@ -283,6 +308,7 @@ async function run() {
       { provide: 'PUBLISHER', useValue: new MarketingPublisher(db) },
       { provide: 'MESSAGES', useValue: new MessageStore(db) },
       { provide: 'DESK', useValue: new DeskStore(db) },
+      { provide: 'BOARD', useValue: new ChannelBoardStore(db) },
       AuthService,
       SessionGuard,
     ],
