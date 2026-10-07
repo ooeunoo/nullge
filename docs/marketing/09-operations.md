@@ -108,3 +108,9 @@ Railway Postgres → Backups에서 일간+주간 스케줄을 설정하고 스�
 - GoDaddy: `www` CNAME을 `ooeunoo.github.io` → `oh27aktx.up.railway.app`로, 기존 `_railway-verify.www` TXT를 새 토큰으로 바꿨다. 루트는 "전달" 탭에서 `https://www.nullge.com` 영구(301, 마스킹 없음) 전달을 추가했고 GoDaddy가 GitHub A 레코드 4개를 자기 전달 IP로 교체했다.
 - 확인: 권한 네임서버 CNAME 반영, Railway 소유권 검증 `verified`·인증서 `VALID`, Railway IP로 직접 해석한 `https://www.nullge.com/` 200(`server: railway-hikari`, 내용 해시가 Pages와 동일 `b555c10139de`), `http(s)://nullge.com/` → 301 `https://www.nullge.com/`. 루트의 경로 포함 요청(`/a?b=1`)은 GoDaddy 전달에서 404로 응답한다(GitHub 시절에는 리디렉션). 사이트는 단일 페이지라 영향이 없지만 기록해 둔다.
 - 1.1.1.1·8.8.8.8·9.9.9.9가 Railway CNAME을 반환한 뒤(17:17 KST) `.github/workflows/pages.yml`을 삭제하고 GitHub Pages 사이트를 API로 제거했다. 이제 `main` 푸시는 어떤 운영 배포도 유발하지 않으며, 공개 사이트 변경은 `make deploy SERVICE=web`으로 배포한다.
+
+## 크레딧 알림 (2026-10-07)
+
+- 공용 텔레그램 방 "인프라_크레딧_알림"(봇 @nullge_bot)으로 두 경로의 알림이 온다.
+- 메일 경로: OpenAI 사용액 알림과 Google 예산 "Gemini API credit alert"(결제 계정 전체 프로젝트의 Gemini API, 25·50·75·100%)가 운영자 Gmail로 오면 Gmail Apps Script가 5분마다 한국어 요약으로 보낸다. 2026-10-07에 Gemini 예산에 Gmail 모니터링 채널을 추가해 OpenAI와 같은 경로가 됐다.
+- 즉시 경로: Console api·worker가 OpenAI·Gemini·Higgsfield에서 크레딧·한도·결제 오류를 받으면 공급자별로 1시간에 한 번 바로 보낸다(`packages/database/src/ops-alert.ts`). Railway api·worker 변수 `TELEGRAM_BOT_TOKEN`(운영자 입력, 비밀)과 `TELEGRAM_CHAT_ID`. 2026-10-07 배포 후 테스트 메시지 수신 확인.
