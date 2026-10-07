@@ -12,7 +12,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       )
     : request.method === 'PATCH'
       ? /^(settings\/integrations|projects\/[a-z0-9-]+\/(profile|posts\/[a-f0-9-]{36}))$/.test(route)
-      : /^(settings\/integrations\/verify|auth\/(local|logout)|projects\/[a-z0-9-]+\/(channels\/(x|threads|instagram)\/(connect|disconnect|verify|authorize|buffer)|generations\/(quote|confirm)|posts|profile\/review|guide\/logo|templates\/[a-f0-9-]{36}|posts\/[a-f0-9-]{36}\/(approve|reopen|publish|published|delete)))$/.test(
+      : /^(settings\/integrations\/verify|auth\/(local|logout)|projects\/[a-z0-9-]+\/(channels\/(x|threads|instagram)\/(connect|disconnect|verify|authorize|buffer)|generations\/(quote|confirm)|posts|profile\/review|guide\/logo|templates\/[a-f0-9-]{36}|posts\/[a-f0-9-]{36}\/(approve|reopen|publish|published|delete|schedule|unschedule)))$/.test(
           route,
         );
   const headers = new Headers({ 'Cache-Control': 'private, no-store' });

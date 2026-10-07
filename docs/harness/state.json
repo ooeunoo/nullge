@@ -1,14 +1,14 @@
 {
   "phase": "adoption-refactor",
   "serviceVersion": "0.1.0",
-  "activeFeature": "multilingual-channels",
+  "activeFeature": "marketing-workspace",
   "completedFeatures": [],
-  "nextAction": "multilingual-channels 운영 배포 확인 → 운영자가 언어별 SNS 계정 생성 후 채널 연결. content-quality 운영 확인(mellow 가이드 입력·글 생성 1회)과 Veo 영상 생성 1회는 운영자 확인 대기",
+  "nextAction": "marketing-workspace 2단계(메시지 실험): 콘텐츠 메시지 꼬리표와 메시지별 반응 비교. 1단계(이번 주 + 예약 게시)는 운영 배포 후 확인",
   "blockers": [
     "저장소 public 유지 여부와 .credentials 암호화 커밋 방식 결정 필요",
     "하네스 고정 계정 이메일이 public 저장소 파일에 포함됨(harness.config.json, platforms.json); 처리 방식 결정 필요"
   ],
   "lastVerifiedCommit": "5fc23a0",
   "lastPushedCommit": "5fc23a0",
-  "updatedAt": "2026-10-06"
+  "updatedAt": "2026-10-07"
 }

@@ -25,6 +25,7 @@ import {
   profileInput,
   revisionInput,
   publishConfirm,
+  scheduleInput,
   externalPublication,
   POST_BODY_LIMIT,
 } from '@nullge/contracts';
@@ -93,6 +94,26 @@ class ConsoleController {
     @Param('action') action: string,
     @Body() body: unknown,
   ) {
+    if (action === 'schedule') {
+      const input = parse(scheduleInput, body);
+      return this.publisher.schedule(
+        r.operator.workspaceId,
+        slug,
+        id,
+        r.operator.id,
+        input.revision,
+        input.connectionRevision,
+        input.scheduledAt,
+      );
+    }
+    if (action === 'unschedule')
+      return this.publisher.unschedule(
+        r.operator.workspaceId,
+        slug,
+        id,
+        r.operator.id,
+        parse(revisionInput, body).revision,
+      );
     if (action === 'publish') {
       const input = parse(publishConfirm, body);
       return this.publisher.enqueue(

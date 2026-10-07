@@ -1,14 +1,36 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
-import { CHANNEL_LABELS, LANGUAGE_LABELS, type Post, type Project, type Connection } from '@nullge/contracts';
+import {
+  CHANNEL_LABELS,
+  LANGUAGE_LABELS,
+  isScheduled,
+  type Post,
+  type Project,
+  type Connection,
+} from '@nullge/contracts';
+import { date } from '../../lib/api';
+import { fromKstInput, suggestSlot } from '../../lib/schedule';
 import { call, message } from './shared';
 
 export function PublishPanel({ project, post }: { project: Project; post: Post }) {
   const [connection, setConnection] = useState<Connection>(),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
-    [confirming, setConfirming] = useState(false);
+    [confirming, setConfirming] = useState(false),
+    [when, setWhen] = useState(() => suggestSlot(post, []));
+  async function send(path: string, body: unknown) {
+    setBusy(true);
+    setError('');
+    try {
+      await call(`projects/${project.slug}/posts/${post.id}/${path}`, body);
+      location.reload();
+    } catch (e) {
+      setError(message(e));
+    } finally {
+      setBusy(false);
+    }
+  }
   useEffect(() => {
     call<Connection[]>(`projects/${project.slug}/channels`)
       .then((rows) =>
@@ -66,6 +88,19 @@ export function PublishPanel({ project, post }: { project: Project; post: Post }
             <p className="muted">
               본문과 미디어를 확인한 후 문구 검토를 완료해 주세요. 저장하지 않은 변경은 게시되지 않아요.
             </p>
+          ) : isScheduled(post) ? (
+            <div className="publish-confirm">
+              <p>
+                <strong>{date(post.scheduledAt!)}</strong>에 @{connection.username}로 자동 게시돼요.
+              </p>
+              <button
+                className="button"
+                disabled={busy}
+                onClick={() => void send('unschedule', { revision: post.revision })}
+              >
+                예약 취소
+              </button>
+            </div>
           ) : confirming ? (
             <div className="publish-confirm">
               <p>
@@ -80,22 +115,13 @@ export function PublishPanel({ project, post }: { project: Project; post: Post }
               <button
                 className="button primary"
                 disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  setError('');
-                  try {
-                    await call(`projects/${project.slug}/posts/${post.id}/publish`, {
-                      revision: post.revision,
-                      connectionRevision: connection.revision,
-                      confirmed: true,
-                    });
-                    location.reload();
-                  } catch (e) {
-                    setError(message(e));
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
+                onClick={() =>
+                  void send('publish', {
+                    revision: post.revision,
+                    connectionRevision: connection.revision,
+                    confirmed: true,
+                  })
+                }
               >
                 이 계정에 지금 게시
               </button>
@@ -104,9 +130,34 @@ export function PublishPanel({ project, post }: { project: Project; post: Post }
               </button>
             </div>
           ) : (
-            <button className="button primary" onClick={() => setConfirming(true)}>
-              게시 내용·계정 확인
-            </button>
+            <div className="publish-confirm">
+              {post.publishError && <p role="alert">{post.publishError}</p>}
+              <label>
+                게시 시각 (서울)
+                <input
+                  type="datetime-local"
+                  value={when}
+                  disabled={busy}
+                  onChange={(e) => setWhen(e.target.value)}
+                />
+              </label>
+              <button
+                className="button primary"
+                disabled={busy}
+                onClick={() =>
+                  void send('schedule', {
+                    revision: post.revision,
+                    connectionRevision: connection.revision,
+                    scheduledAt: fromKstInput(when),
+                  })
+                }
+              >
+                이 시각에 예약
+              </button>
+              <button className="button" onClick={() => setConfirming(true)}>
+                지금 게시하기
+              </button>
+            </div>
           )}
         </>
       )}

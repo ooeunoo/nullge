@@ -75,6 +75,22 @@ export function Console({ route }: { route: string[] }) {
       setBusy(false);
     }
   }
+  async function run(task: () => Promise<unknown>, success: string) {
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await task();
+      await refresh();
+      setNotice(success);
+    } catch (e) {
+      // Refresh first: a successful refresh clears the error banner.
+      await refresh();
+      setError(e instanceof Error ? e.message : '요청을 처리하지 못했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  }
   async function mutate<T>(path: string, body: unknown, method = 'POST'): Promise<T> {
     setBusy(true);
     setError('');
@@ -144,7 +160,7 @@ export function Console({ route }: { route: string[] }) {
         <nav aria-label="주요 메뉴">
           <a className={`nav-item ${!project && !isSettings ? 'active' : ''}`} href="/">
             <LayoutGrid size={18} />
-            전체 보기
+            이번 주
           </a>
           <a className={`nav-item ${isSettings ? 'active' : ''}`} href="/settings">
             <SlidersHorizontal size={18} />
@@ -314,7 +330,7 @@ export function Console({ route }: { route: string[] }) {
           ) : isSettings ? (
             <SharedSettings />
           ) : (
-            <Overview data={data} />
+            <Overview data={data} run={run} busy={busy} />
           )}
         </main>
         <footer className="main-footer">

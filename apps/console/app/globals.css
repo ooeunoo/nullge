@@ -459,8 +459,114 @@ h1 {
 }
 .overview-bottom {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
+}
+.this-week {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+.week-block {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 22px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.week-block h3 {
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+.week-help {
+  margin: -2px 0 8px;
+  font-size: 13px;
+}
+.week-empty {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 4px 0;
+}
+.week-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.week-row.attention {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.week-row.attention .week-text span {
+  color: #b42318;
+}
+.week-thumb {
+  width: 44px;
+  height: 55px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--surface);
+}
+.week-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.week-text strong {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.week-text span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.week-time input {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+.week-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.week-actions .button {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+.week-blocked {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  font-size: 13px;
+  color: #9a5b00;
+  flex-wrap: wrap;
+}
+.week-blocked .button {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+.week-when {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
 }
 .panel {
   background: white;
@@ -1158,6 +1264,13 @@ h1 {
   }
   .publishing-note {
     grid-column: 1/-1;
+  }
+  .week-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .week-time,
+  .week-actions {
+    grid-column: 2;
   }
   .overview-bottom {
     grid-template-columns: 1fr;

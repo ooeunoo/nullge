@@ -179,6 +179,9 @@ export interface Post extends Omit<PostInput, 'image' | 'poster'> {
     'queued' | 'creating' | 'processing' | 'submitting' | 'published' | 'failed' | 'uncertain' | null;
   publishError?: string | null;
   publishedUrl?: string | null;
+  /** Planned publishing time; valid only while scheduledRevision equals revision. */
+  scheduledAt?: string | null;
+  scheduledRevision?: number | null;
   id: string;
   projectId: string;
   status: PostStatus;
@@ -325,6 +328,18 @@ export interface GenerationQuote {
   model: string;
   format: ContentFormat;
 }
+export const scheduleInput = z
+  .object({
+    revision: z.number().int().positive(),
+    connectionRevision: z.number().int().positive(),
+    scheduledAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+export type ScheduleInput = z.infer<typeof scheduleInput>;
+/** A schedule counts only for the revision it was made on and only until publishing starts. */
+export const isScheduled = (
+  p: Pick<Post, 'scheduledAt' | 'scheduledRevision' | 'revision' | 'status' | 'publishStatus'>,
+) => !!p.scheduledAt && p.scheduledRevision === p.revision && p.status === 'approved' && !p.publishStatus;
 export const generationConfirm = z.object({ quoteId: z.uuid(), confirmed: z.literal(true) }).strict();
 export const publishConfirm = z
   .object({

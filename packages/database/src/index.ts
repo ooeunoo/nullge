@@ -10,6 +10,7 @@ import { ReviewStepRemoved1790640000000 } from './review-step-migration';
 import { ProductsRetired1790726400000 } from './products-retired-migration';
 import { ContentGuide1790812800000 } from './content-guide-migration';
 import { ChannelLanguages1790985600000 } from './channel-language-migration';
+import { ScheduledPublishing1791072000000 } from './schedule-migration';
 import { VideoPosters1790560000000 } from './video-poster-migration';
 export { MarketingStore } from './marketing-store';
 export { MarketingWorker } from './marketing-worker';
@@ -38,6 +39,7 @@ export function database(url = process.env.DATABASE_URL) {
       ProductsRetired1790726400000,
       ContentGuide1790812800000,
       ChannelLanguages1790985600000,
+      ScheduledPublishing1791072000000,
     ],
     migrationsTableName: 'nullge_migrations',
     extra: { max: 8, connectionTimeoutMillis: 5000 },

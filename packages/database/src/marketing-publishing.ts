@@ -1,6 +1,13 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
-import type { DataSource } from 'typeorm';
-import { CHANNEL_LABELS, LANGUAGE_LABELS, type Channel, type Language, type Post } from '@nullge/contracts';
+import type { DataSource, EntityManager } from 'typeorm';
+import {
+  CHANNEL_LABELS,
+  LANGUAGE_LABELS,
+  type Channel,
+  type Language,
+  type Post,
+  type Project,
+} from '@nullge/contracts';
 import { Store, StoreError } from './store';
 import { unseal } from './marketing-security';
 import { MarketingStore, channelContext } from './marketing-store';
@@ -56,6 +63,60 @@ export class MarketingPublisher {
   constructor(readonly db: DataSource) {
     this.store = new Store(db);
   }
+  /**
+   * Every check a publication needs, shared by "publish now" and scheduling so a schedule can never pass a post
+   * that publishing would refuse.
+   */
+  private async publishable(m: EntityManager, w: string, p: Project, post: any, connectionRevision: number) {
+    if (post.publishStatus)
+      throw new StoreError(409, '이미 게시 요청이 기록되어 있습니다. 중복 게시하지 않습니다.');
+    if (
+      post.status !== 'approved' ||
+      !post.approvedAt ||
+      !p.profileReviewedAt ||
+      p.revision !== post.profileRevision
+    )
+      throw new StoreError(400, '최신 제품 정보와 콘텐츠 검토를 먼저 완료해 주세요.');
+    validatePublish(post);
+    const [c] = await m.query(
+      'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4 FOR UPDATE',
+      [w, p.id, post.channel, post.language],
+    );
+    // A post goes only to the account of its own language, never to another language's account.
+    if (!c?.ciphertext)
+      throw new StoreError(
+        400,
+        `${LANGUAGE_LABELS[post.language as Language]} ${CHANNEL_LABELS[post.channel as Channel]} 계정을 먼저 연결해 주세요.`,
+      );
+    if (c.revision !== connectionRevision) throw new StoreError(409, '게시할 계정을 다시 확인해 주세요.');
+    if (
+      c.expiresAt &&
+      new Date(c.expiresAt).getTime() < Date.now() + 60000 &&
+      !(
+        post.channel === 'x' &&
+        unseal<{ refreshToken?: string }>(c.ciphertext, channelContext(w, p.id, 'x', post.language))
+          .refreshToken
+      )
+    )
+      throw new StoreError(400, 'SNS 인증이 만료되었거나 곧 만료됩니다. 채널에서 다시 인증해 주세요.');
+    let aiGenerated: boolean | undefined;
+    if (post.assetId) {
+      const [a] = await m.query(
+        'SELECT mime,"jobId",octet_length(content) size FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3',
+        [post.assetId, w, p.id],
+      );
+      if (!a) throw new StoreError(400, '미디어를 확인할 수 없습니다.');
+      aiGenerated = !!a.jobId;
+      if (post.channel === 'instagram' && post.format === 'image' && a.mime !== 'image/jpeg')
+        throw new StoreError(
+          400,
+          'Instagram 직접 게시 이미지는 JPEG여야 합니다. 원본을 변환한 뒤 수동 게시해 주세요.',
+        );
+      if (post.channel === 'x' && a.size > 5 * 1024 * 1024)
+        throw new StoreError(400, 'X 직접 게시 이미지는 5 MB 이하여야 합니다.');
+    }
+    return { c, aiGenerated };
+  }
   async enqueue(
     w: string,
     slug: string,
@@ -73,53 +134,7 @@ export class MarketingPublisher {
       );
       if (!post || post.revision !== revision)
         throw new StoreError(409, '콘텐츠가 변경되었습니다. 다시 검토해 주세요.');
-      if (post.publishStatus)
-        throw new StoreError(409, '이미 게시 요청이 기록되어 있습니다. 중복 게시하지 않습니다.');
-      if (
-        post.status !== 'approved' ||
-        !post.approvedAt ||
-        !p.profileReviewedAt ||
-        p.revision !== post.profileRevision
-      )
-        throw new StoreError(400, '최신 제품 정보와 콘텐츠 검토를 먼저 완료해 주세요.');
-      validatePublish(post);
-      const [c] = await m.query(
-        'SELECT * FROM channel_connections WHERE "workspaceId"=$1 AND "projectId"=$2 AND channel=$3 AND language=$4 FOR UPDATE',
-        [w, p.id, post.channel, post.language],
-      );
-      // A post goes only to the account of its own language, never to another language's account.
-      if (!c?.ciphertext)
-        throw new StoreError(
-          400,
-          `${LANGUAGE_LABELS[post.language as Language]} ${CHANNEL_LABELS[post.channel as Channel]} 계정을 먼저 연결해 주세요.`,
-        );
-      if (c.revision !== connectionRevision) throw new StoreError(409, '게시할 계정을 다시 확인해 주세요.');
-      if (
-        c.expiresAt &&
-        new Date(c.expiresAt).getTime() < Date.now() + 60000 &&
-        !(
-          post.channel === 'x' &&
-          unseal<{ refreshToken?: string }>(c.ciphertext, channelContext(w, p.id, 'x', post.language))
-            .refreshToken
-        )
-      )
-        throw new StoreError(400, 'SNS 인증이 만료되었거나 곧 만료됩니다. 채널에서 다시 인증해 주세요.');
-      let aiGenerated: boolean | undefined;
-      if (post.assetId) {
-        const [a] = await m.query(
-          'SELECT mime,"jobId",octet_length(content) size FROM marketing_assets WHERE id=$1 AND "workspaceId"=$2 AND "projectId"=$3',
-          [post.assetId, w, p.id],
-        );
-        if (!a) throw new StoreError(400, '미디어를 확인할 수 없습니다.');
-        aiGenerated = !!a.jobId;
-        if (post.channel === 'instagram' && post.format === 'image' && a.mime !== 'image/jpeg')
-          throw new StoreError(
-            400,
-            'Instagram 직접 게시 이미지는 JPEG여야 합니다. 원본을 변환한 뒤 수동 게시해 주세요.',
-          );
-        if (post.channel === 'x' && a.size > 5 * 1024 * 1024)
-          throw new StoreError(400, 'X 직접 게시 이미지는 5 MB 이하여야 합니다.');
-      }
+      const { c, aiGenerated } = await this.publishable(m, w, p, post, connectionRevision);
       await m.query(
         `INSERT INTO publication_jobs (id,"workspaceId","projectId","postId","actorId","connectionRevision",snapshot,status) VALUES ($1,$2,$3,$4,$5,$6,$7,'queued')`,
         [
@@ -141,6 +156,93 @@ export class MarketingPublisher {
       await m.query(`UPDATE posts SET "publishStatus"='queued',"updatedAt"=now() WHERE id=$1`, [id]);
       return { ok: true };
     });
+  }
+  /** Plans publication at a time; the schedule is bound to the post revision it was made on. */
+  async schedule(
+    w: string,
+    slug: string,
+    id: string,
+    actor: string,
+    revision: number,
+    connectionRevision: number,
+    scheduledAt: string,
+    now = Date.now(),
+  ): Promise<Post> {
+    const at = new Date(scheduledAt).getTime();
+    if (!Number.isFinite(at) || at < now - 5 * 60000)
+      throw new StoreError(400, '지난 시각으로는 예약할 수 없어요. 지금 게시하거나 다른 시각을 골라 주세요.');
+    if (at > now + 60 * 86400000) throw new StoreError(400, '예약은 60일 안쪽으로만 할 수 있어요.');
+    return this.db.transaction(async (m) => {
+      const p = await this.store.project(w, slug, m, true);
+      const [post] = await m.query(
+        'SELECT * FROM posts WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3 FOR UPDATE',
+        [w, p.id, id],
+      );
+      if (!post || post.revision !== revision)
+        throw new StoreError(409, '콘텐츠가 변경되었습니다. 새로고침해 주세요.');
+      await this.publishable(m, w, p, post, connectionRevision);
+      const [next] = await m.query(
+        `WITH changed AS (UPDATE posts SET revision=revision+1,"scheduledAt"=$2,"scheduledBy"=$3,"scheduledRevision"=revision+1,"scheduledConnectionRevision"=$4,"publishError"=NULL,"updatedAt"=now() WHERE id=$1 RETURNING *) SELECT * FROM changed`,
+        [id, new Date(at), actor, connectionRevision],
+      );
+      await m.query(
+        'INSERT INTO events (id,"workspaceId","projectId","actorId",action,title,"postId") VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [randomUUID(), w, p.id, actor, 'post_scheduled', post.title, id],
+      );
+      return JSON.parse(JSON.stringify(next));
+    });
+  }
+  async unschedule(w: string, slug: string, id: string, actor: string, revision: number): Promise<Post> {
+    return this.db.transaction(async (m) => {
+      const p = await this.store.project(w, slug, m, true);
+      const [next] = await m.query(
+        `WITH changed AS (UPDATE posts SET revision=revision+1,"scheduledAt"=NULL,"scheduledRevision"=NULL,"scheduledBy"=NULL,"scheduledConnectionRevision"=NULL,"updatedAt"=now()
+         WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3 AND revision=$4 AND "publishStatus" IS NULL RETURNING *) SELECT * FROM changed`,
+        [w, p.id, id, revision],
+      );
+      if (!next)
+        throw new StoreError(409, '콘텐츠가 변경되었거나 이미 게시가 시작됐어요. 새로고침해 주세요.');
+      await m.query(
+        'INSERT INTO events (id,"workspaceId","projectId","actorId",action,title,"postId") VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [randomUUID(), w, p.id, actor, 'post_unscheduled', next.title, id],
+      );
+      return JSON.parse(JSON.stringify(next));
+    });
+  }
+  /**
+   * Starts publication for schedules that are due, with the same checks as "publish now". A schedule that can no
+   * longer publish is cleared and its reason recorded on the post; it is never retried on its own.
+   */
+  async publishDue(limit = 5) {
+    const due = await this.db.query(
+      `SELECT p.id,p."workspaceId",p.revision,p."scheduledBy",p."scheduledConnectionRevision",pr.slug FROM posts p
+       JOIN projects pr ON pr.id=p."projectId" AND pr."workspaceId"=p."workspaceId"
+       WHERE p."scheduledAt"<=now() AND p."scheduledRevision"=p.revision AND p.status='approved' AND p."publishStatus" IS NULL
+       ORDER BY p."scheduledAt" LIMIT $1`,
+      [limit],
+    );
+    for (const d of due) {
+      try {
+        await this.enqueue(
+          d.workspaceId,
+          d.slug,
+          d.id,
+          d.scheduledBy,
+          d.revision,
+          d.scheduledConnectionRevision,
+        );
+      } catch (e) {
+        const reason =
+          e instanceof StoreError && e.status === 409 && /계정/.test(e.message)
+            ? '게시할 계정이 바뀌어 예약 게시를 하지 않았어요. 계정을 확인한 뒤 다시 예약해 주세요.'
+            : `예약 게시를 하지 못했어요: ${e instanceof StoreError ? e.message : '알 수 없는 오류'}`;
+        await this.db.query(
+          `UPDATE posts SET "scheduledAt"=NULL,"scheduledRevision"=NULL,"publishError"=$2 WHERE id=$1 AND "publishStatus" IS NULL`,
+          [d.id, reason],
+        );
+      }
+    }
+    return due.length;
   }
   private async state(
     j: any,
@@ -164,6 +266,7 @@ export class MarketingPublisher {
     });
   }
   async tick() {
+    await this.publishDue();
     const stale = await this.db.query(
       `SELECT * FROM publication_jobs WHERE status IN ('creating','submitting') AND "updatedAt"<now()-interval '5 minutes'`,
     );
