@@ -8,6 +8,7 @@ import {
 } from '@nullge/contracts';
 import { guideOf } from './store';
 import { cdnSource, type MediaSource } from './marketing-security';
+import { alertCreditProblem } from './ops-alert';
 import { StoreError } from './store';
 import {
   PLANNING_OUTPUT_TOKENS,
@@ -38,11 +39,13 @@ export class ProviderError extends StoreError {
 }
 /** Host plus the provider's own short error text, so a rejected request says what was wrong. */
 async function failureDetail(url: string, r: Response) {
-  let text = '';
+  let text = '',
+    code = '';
   try {
     const body: any = await r.json();
     const e = body?.error;
     text = typeof e === 'string' ? e : e?.message || body?.message || body?.error_description || '';
+    code = typeof e === 'object' && e ? String(e.code ?? e.status ?? '') : '';
   } catch {
     await r.body?.cancel().catch(() => undefined);
   }
@@ -51,7 +54,9 @@ async function failureDetail(url: string, r: Response) {
     .replace(/\s+/g, ' ')
     .replace(/[A-Za-z0-9_\-]{32,}/g, '…')
     .slice(0, 160);
-  return [new URL(url).hostname, clean].filter(Boolean).join(': ');
+  const host = new URL(url).hostname;
+  alertCreditProblem(host, r.status, `${code} ${clean}`.trim());
+  return [host, clean].filter(Boolean).join(': ');
 }
 export async function providerJson<T>(
   url: string,
