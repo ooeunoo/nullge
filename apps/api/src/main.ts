@@ -24,6 +24,7 @@ import {
   MarketingStore,
   MarketingPublisher,
   MessageStore,
+  DeskStore,
 } from '@nullge/database';
 import { MarketingController, PublicAssetController } from './marketing';
 import {
@@ -37,6 +38,9 @@ import {
   messageUpdate,
   postMessageInput,
   metricsInput,
+  taskInput,
+  spendInput,
+  budgetInput,
   externalPublication,
   POST_BODY_LIMIT,
 } from '@nullge/contracts';
@@ -76,7 +80,35 @@ class ConsoleController {
     @Inject('STORE') private readonly store: Store,
     @Inject('PUBLISHER') private readonly publisher: MarketingPublisher,
     @Inject('MESSAGES') private readonly messages: MessageStore,
+    @Inject('DESK') private readonly desk: DeskStore,
   ) {}
+  @Get('desk') getDesk(@Req() r: AuthenticatedRequest) {
+    return this.desk.desk(r.operator.workspaceId);
+  }
+  @Post('desk/tasks') addTask(@Req() r: AuthenticatedRequest, @Body() body: unknown) {
+    return this.desk.addTask(r.operator.workspaceId, r.operator.id, parse(taskInput, body));
+  }
+  @Post('desk/tasks/:id/:action') setTask(
+    @Req() r: AuthenticatedRequest,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('action') action: string,
+  ) {
+    if (action !== 'done' && action !== 'reopen' && action !== 'delete')
+      throw new BadRequestException('지원하지 않는 작업입니다.');
+    return this.desk.setTask(r.operator.workspaceId, id, action);
+  }
+  @Post('desk/spend') addSpend(@Req() r: AuthenticatedRequest, @Body() body: unknown) {
+    return this.desk.addSpend(r.operator.workspaceId, r.operator.id, parse(spendInput, body));
+  }
+  @Post('desk/spend/:id/delete') deleteSpend(
+    @Req() r: AuthenticatedRequest,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.desk.deleteSpend(r.operator.workspaceId, id);
+  }
+  @Patch('desk/budget') setBudget(@Req() r: AuthenticatedRequest, @Body() body: unknown) {
+    return this.desk.setBudget(r.operator.workspaceId, parse(budgetInput, body).monthlyCapKrw);
+  }
   @Get('projects/:slug/messages') listMessages(@Req() r: AuthenticatedRequest, @Param('slug') slug: string) {
     return this.messages.list(r.operator.workspaceId, slug);
   }
@@ -250,6 +282,7 @@ async function run() {
       { provide: 'MARKETING', useValue: new MarketingStore(db) },
       { provide: 'PUBLISHER', useValue: new MarketingPublisher(db) },
       { provide: 'MESSAGES', useValue: new MessageStore(db) },
+      { provide: 'DESK', useValue: new DeskStore(db) },
       AuthService,
       SessionGuard,
     ],

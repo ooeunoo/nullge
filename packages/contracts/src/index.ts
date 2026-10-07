@@ -391,6 +391,81 @@ export interface ContentMessage {
 /** The comparison the research recommends: saves plus shares per reach. Null until something was measured. */
 export const responseRate = (m: Pick<ContentMessage, 'reach' | 'saves' | 'shares'>) =>
   m.reach > 0 ? (m.saves + m.shares) / m.reach : null;
+export const TASK_KINDS = ['todo', 'deadline', 'season'] as const;
+export const SPEND_CATEGORIES = ['ads', 'creator', 'generation', 'tool', 'other'] as const;
+export const SPEND_LABELS: Record<(typeof SPEND_CATEGORIES)[number], string> = {
+  ads: '광고',
+  creator: '크리에이터',
+  generation: 'AI 생성(외부)',
+  tool: '도구·구독',
+  other: '기타',
+};
+const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+export const taskInput = z
+  .object({
+    title: z.string().trim().min(1).max(120),
+    detail: z.string().trim().max(1000).default(''),
+    link: z
+      .url({ protocol: /^https$/ })
+      .max(500)
+      .nullable()
+      .default(null),
+    kind: z.enum(TASK_KINDS).default('todo'),
+    dueOn: isoDay.nullable().default(null),
+    projectSlug: z
+      .string()
+      .regex(/^[a-z0-9-]{1,60}$/)
+      .nullable()
+      .default(null),
+  })
+  .strict();
+export const spendInput = z
+  .object({
+    spentOn: isoDay,
+    category: z.enum(SPEND_CATEGORIES),
+    amountKrw: z.number().int().min(0).max(100_000_000),
+    note: z.string().trim().max(200).default(''),
+    projectSlug: z
+      .string()
+      .regex(/^[a-z0-9-]{1,60}$/)
+      .nullable()
+      .default(null),
+  })
+  .strict();
+export const budgetInput = z
+  .object({ monthlyCapKrw: z.number().int().min(0).max(1_000_000_000).nullable() })
+  .strict();
+export interface OperatorTask {
+  id: string;
+  projectId: string | null;
+  title: string;
+  detail: string;
+  link: string | null;
+  kind: (typeof TASK_KINDS)[number];
+  dueOn: string | null;
+  status: 'open' | 'done';
+  createdAt: string;
+  doneAt: string | null;
+}
+export interface SpendEntry {
+  id: string;
+  projectId: string | null;
+  spentOn: string;
+  category: (typeof SPEND_CATEGORIES)[number];
+  amountKrw: number;
+  note: string;
+}
+/** The operator's desk: what only they can do, dated moments, and this month's spend against the cap. */
+export interface Desk {
+  tasks: OperatorTask[];
+  month: string;
+  spend: SpendEntry[];
+  /** Console AI generation this month, from confirmed quotes (an upper estimate). */
+  generationUsd: number;
+  monthlyCapKrw: number | null;
+}
+/** Fixed rate for comparing USD generation estimates with a KRW budget; shown to the operator. */
+export const KRW_PER_USD = 1400;
 export const generationConfirm = z.object({ quoteId: z.uuid(), confirmed: z.literal(true) }).strict();
 export const publishConfirm = z
   .object({

@@ -4,6 +4,7 @@ import { type Dashboard } from '@nullge/contracts';
 import { Mark } from '../../components/ui/Mark';
 import { date, projectPath } from '../../lib/api';
 import { ThisWeek } from './ThisWeek';
+import { OperatorDesk } from './OperatorDesk';
 
 export function Overview({
   data,
@@ -32,6 +33,7 @@ export function Overview({
         </span>
       </div>
       <ThisWeek data={data} run={run} busy={busy} />
+      <OperatorDesk data={data} />
       <section className="section">
         <div className="section-title">
           <h2>우리의 제품</h2>

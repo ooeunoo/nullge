@@ -14,7 +14,7 @@
 |---|---|---|
 | 1 | **이번 주** 첫 화면 + **예약 게시** | 완료 (2026-10-07) |
 | 2 | **메시지 실험**: 콘텐츠의 메시지 꼬리표, 메시지별 반응 비교(저장+공유 ÷ 도달), 30일 판정 | 완료 (2026-10-07) |
-| 3 | **직접 해 주셔야 해요** 목록, **캘린더**(시즌·피처링 마감), **예산**(월 사용액과 상한) | 예정 |
+| 3 | **직접 해 주셔야 해요** 목록, **캘린더**(시즌·피처링 마감), **예산**(월 사용액과 상한) | 완료 (2026-10-07) |
 | 4 | **채널 보드**(시험 중·유지·중단), 제품 화면 정리 | 예정 |
 
 ## 1단계: 이번 주 + 예약 게시
@@ -52,3 +52,12 @@
 - 화면: 제품 화면 맨 위 "메시지 실험"(메시지별 콘텐츠·게시·측정 수, 도달, 저장+공유, 반응률 막대, 판정 문구, 메시지 추가·이긴 메시지로·그만두기·다시 시험). 편집 화면 "메시지 실험"(메시지 선택, 게시 뒤 결과 입력과 반응률).
 - API: `GET/POST projects/:slug/messages`, `PATCH projects/:slug/messages/:id`, `POST projects/:slug/posts/:id/message`, `POST projects/:slug/posts/:id/metrics`.
 - 결과 숫자는 지금 운영자나 Claude가 인사이트에서 옮겨 적는다. Instagram·Buffer 인사이트 자동 수집은 이후 단계로 남긴다.
+
+## 3단계: 직접 할 일·일정·예산
+
+- `operator_tasks`(제목, 설명, https 링크, 종류 todo·deadline·season, 마감일, 상태 open·done), `marketing_spend`(날짜, 분류 광고·크리에이터·외부 AI 생성·도구·기타, 원화 금액, 메모), `marketing_budget`(월 상한 원화).
+- 첫 화면 세 칸:
+  - **직접 해 주셔야 해요**: 종류 todo. 체크하면 완료, 완료한 일은 14일 동안 줄 그어 보인다. Claude가 운영자에게 넘길 일을 여기에 쌓는다.
+  - **다가오는 일정**: 60일 안의 deadline·season 할 일과 예약 게시를 날짜순으로, D-day와 함께.
+  - **이번 달 마케팅 비용**: 기록한 비용 + Console AI 생성 추정(확정된 견적 합계, 1달러 1,400원으로 환산)과 월 상한 막대(90% 넘으면 주황). 비용 기록·삭제, 상한 수정.
+- API: `GET desk`, `POST desk/tasks`, `POST desk/tasks/:id/(done|reopen|delete)`, `POST desk/spend`, `POST desk/spend/:id/delete`, `PATCH desk/budget`.
