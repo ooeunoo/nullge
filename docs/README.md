@@ -9,7 +9,6 @@
 | `docs/harness` | `docs/harness/` | 하네스 상태·결정·플랫폼 ID(비밀 없음) |
 | 운영 절차 | `docs/marketing/09-operations.md` | Railway·도메인·Google 로그인 운영 |
 | 구현 상태 | `docs/marketing/08-implementation-status.md` | 날짜별 구현·검증 기록 |
-| 콘텐츠·SNS 계정 | `docs/marketing/14`, `15` | mellow 콘텐츠 계획, 제품별 한국어·영어 SNS 계정 키트 |
-| 마케팅 방법론·실행 계획 | `docs/marketing/16-marketing-methodology-2026.md`, `17-mellow-30day-content-plan.md` | 2026 방법론 리서치와 mellow 90일 실행 계획, 다른 제품 우선순위 |
+| 서비스별 마케팅 현황 | [`docs/marketing/services/`](marketing/services/README.md) | **먼저 읽기.** 서비스별 현재 상태·다음 할 일·진행 기록과 콘텐츠·광고·소재 문서, 공통 방법론·SNS 계정·광고 규칙 |
 
-기존 `docs/marketing/` 번호 체계는 유지한다. 새 기능 문서는 하네스 폴더 규칙(plans/qa/releases)을 따른다.
+`docs/marketing/01`–`13`은 Console 기획·운영 문서로 번호 체계를 유지하고, 서비스 마케팅 실행 문서는 `docs/marketing/services/<서비스>/`에 둔다. 새 기능 문서는 하네스 폴더 규칙(plans/qa/releases)을 따른다.
