@@ -11,7 +11,7 @@ export const oauthKeys: Record<Channel, readonly [SecretField, SecretField]> = {
 };
 export const metaScopes = {
   instagram: ['instagram_business_basic', 'instagram_business_content_publish'],
-  threads: ['threads_basic', 'threads_content_publish'],
+  threads: ['threads_basic', 'threads_content_publish', 'threads_manage_replies'],
 };
 export function oauthApp(channel: Channel, c: Credentials) {
   const [id, secret] = oauthKeys[channel];
