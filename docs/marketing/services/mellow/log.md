@@ -3,6 +3,7 @@
 최신이 위. 자세한 내용은 각 문서를 본다.
 
 ## 2026-10-10
+- 직접 연결 완료: Threads `@mellow.call_kr`, Instagram `@mellow.call_kr`(ko)·`@mellow.call`(en). 연결 변경으로 풀린 10/11~17 예약 7건을 같은 시각(19:00)으로 다시 예약(전부 201). Buffer는 첫 직접 게시 확인 뒤 해제.
 - Console에 '답글 이어 쓰기'(X·Threads 첫 글 뒤 내 답글 최대 3개) 추가·배포. Threads 연결 범위에 threads_manage_replies 추가.
 - 공용 Meta 앱 "Nullge Marketing" 생성(Threads·Instagram). Buffer 대신 직접 연결로 전환 결정.
 - 운영자 방향: 얕게 여러 번, 거부감 없이. 단계별 노출 계획과 1단계 첫 주(10/18~24) 작성. 커뮤니티는 운영자임을 밝힌 답변만.

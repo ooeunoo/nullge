@@ -6,7 +6,8 @@
 
 | 영역 | 상태 |
 |---|---|
-| Instagram | `@mellow.call_kr`(한국어, 주력) · `@mellow.call`(영어 글로벌). Buffer로 Console 연결 |
+| Instagram | `@mellow.call_kr`(한국어, 주력) · `@mellow.call`(영어 글로벌). Console 직접 연결(10/10, Buffer에서 전환) |
+| Threads·X | Threads `@mellow.call_kr`, X `@mellow_call` 모두 Console 직접 연결. 답글 이어 쓰기 가능 |
 | 메시지 시험 | A 기억하는 친구 · B 영어 말고 일본어도 · C 틀려도 괜찮은 통화. Console 메시지 실험에 등록 |
 | 유료 광고 | **Meta 광고 3종 게재 시작**(아래). 첫 유료 집행 |
 | 영상 | Veo 릴스는 비용·품질 문제로 중단. Higgsfield(스타터)로 콘티 이미지까지 진행 |
@@ -25,7 +26,7 @@
 |---|---|---|
 | 예약됨 | @mellow.call_kr 매일 오후 7시: 10/11 C1 · **10/12 준호와 유키 릴스(B)** · 10/13 B1 · 10/14 C2 · 10/15 A1 · 10/16 B2 · 10/17 A2 (Console 예약 게시) | 자동 |
 | 10/17까지 | 1단계 첫 주(10/18~24) 카드·릴스 제작 후 예약 — [얕게 여러 번](content/2026-10-11-soft-exposure-plan.md) | Claude |
-| 진행 중 | Console 직접 연결 전환: 운영자가 Threads·Instagram 앱 시크릿 입력, `@mellow.call` Instagram·`@mellow.call_kr` Threads 테스터 수락 → Claude가 연결·Buffer 해제·10/11~17 예약 7건 다시 예약 | 운영자 → Claude |
+| 10/11 19:00 이후 | 첫 직접 게시(C1) 성공 확인 → Buffer API 키 삭제, Instagram '앱 및 웹사이트'에서 Buffer 권한 삭제(두 계정) | Claude |
 | 10/12 | 광고 중간 점검(노출·클릭률·클릭당 비용, 거절 여부) | Claude |
 | 10/15 이후 | 광고 결과 정리 → Console 메시지 실험·비용 기록, 다음 라운드(이긴 소재 2개) 제안 | Claude |
 | 언제든 | 영어용 Facebook 페이지 "mellow: AI Language Practice" 만들고 `@mellow.call` 연결 | Claude(페이지) + 운영자(Instagram 허용) |
