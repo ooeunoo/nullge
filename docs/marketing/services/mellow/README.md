@@ -25,6 +25,7 @@
 |---|---|---|
 | 예약됨 | @mellow.call_kr 매일 오후 7시: 10/11 C1 · **10/12 준호와 유키 릴스(B)** · 10/13 B1 · 10/14 C2 · 10/15 A1 · 10/16 B2 · 10/17 A2 (Console 예약 게시) | 자동 |
 | 10/17까지 | 1단계 첫 주(10/18~24) 카드·릴스 제작 후 예약 — [얕게 여러 번](content/2026-10-11-soft-exposure-plan.md) | Claude |
+| 진행 중 | Console 직접 연결 전환: 운영자가 Threads·Instagram 앱 시크릿 입력, `@mellow.call` Instagram·`@mellow.call_kr` Threads 테스터 수락 → Claude가 연결·Buffer 해제·10/11~17 예약 7건 다시 예약 | 운영자 → Claude |
 | 10/12 | 광고 중간 점검(노출·클릭률·클릭당 비용, 거절 여부) | Claude |
 | 10/15 이후 | 광고 결과 정리 → Console 메시지 실험·비용 기록, 다음 라운드(이긴 소재 2개) 제안 | Claude |
 | 언제든 | 영어용 Facebook 페이지 "mellow: AI Language Practice" 만들고 `@mellow.call` 연결 | Claude(페이지) + 운영자(Instagram 허용) |
@@ -45,6 +46,7 @@
 - 광고 대상은 18세 이상. Google Play 신고(만 18세 이상)와 맞춘다 (2026-10-10).
 - 영상 도구: Veo 대신 Higgsfield. 엠마는 얼굴 영상으로 만들지 않고 실제 앱 화면·목소리로만 등장 (2026-10-09).
 - 노출 방식: 한 번에 크게 팔지 않고 얕게 여러 번. 10/18부터 2주는 게시물에 앱 이름·설치 권유 없이 상황·표현만, 단계적으로 드러낸다 (2026-10-10, 운영자 방향).
+- 게시 경로: Buffer를 없애고 X·Threads·Instagram 모두 Console 직접 연결로 간다(공용 Meta 앱 "Nullge Marketing"). 직접 연결이라야 답글 이어 쓰기가 된다 (2026-10-10).
 - 광고 소재 디자인: 어두운 배경 + 로고 + 흰색/초록 두 줄 헤드라인 + 실제 앱 화면 (2026-10-10, 운영자 선택).
 
 ## 지켜야 할 것

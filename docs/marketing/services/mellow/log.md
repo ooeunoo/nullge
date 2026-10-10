@@ -3,6 +3,8 @@
 최신이 위. 자세한 내용은 각 문서를 본다.
 
 ## 2026-10-10
+- Console에 '답글 이어 쓰기'(X·Threads 첫 글 뒤 내 답글 최대 3개) 추가·배포. Threads 연결 범위에 threads_manage_replies 추가.
+- 공용 Meta 앱 "Nullge Marketing" 생성(Threads·Instagram). Buffer 대신 직접 연결로 전환 결정.
 - 운영자 방향: 얕게 여러 번, 거부감 없이. 단계별 노출 계획과 1단계 첫 주(10/18~24) 작성. 커뮤니티는 운영자임을 밝힌 답변만.
 - 10/11~17 게시 7건 승인·예약(매일 19:00 KST). 2화 준호×유키 릴스는 10/12, 하린 1화 측정 48시간 확보를 위해 오늘 게시하지 않음.
 - 하린 1화 릴스 게시(@mellow.call_kr, 51초): https://www.instagram.com/reel/DeTXl_JjS9o/ . Console 메시지 실험에 D "사람 앞이 부담스러울 때" 추가. 48시간 뒤 결과 기록.

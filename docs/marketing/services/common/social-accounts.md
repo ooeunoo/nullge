@@ -106,3 +106,4 @@ Type like you talk — dates and times just work.
 | 2026-10-06 | Instagram `@mellow.call` | 소개를 영어로 바꿈. 이름(`mellow \| AI 전화 회화`)은 그대로이고, 앱에서 영어 이름으로 바꾼다 |
 | 2026-10-06 | Instagram `@mellow.call_kr` | 운영자 승인으로 프로페셔널(비즈니스) 계정 전환(카테고리 소프트웨어, 연락처 비공개), Buffer 권한 허용 |
 | 2026-10-06 | Console mellow | Instagram 한국어 = Buffer `@mellow.call_kr`, Instagram 영어 = Buffer `@mellow.call`. X 한국어 = `@mellow_call`(그대로), Threads 미연결 |
+| 2026-10-10 | Meta 앱 "Nullge Marketing" | 전 제품 공용 Meta 개발자 앱 생성(개발 모드, 비즈니스 미연결). Threads(게시·답글 쓰기·답글 읽기·인사이트)와 Instagram 로그인 API(기본·게시·인사이트) 이용 사례. 콜백 `https://console.nullge.com/api/channels/{threads,instagram}/callback`. 테스터: Threads `mellow.call_kr`, Instagram `mellow.call_kr`(수락)·`mellow.call`. 앱 ID·시크릿은 운영자가 Console 공통 API 설정에 입력 |
