@@ -17,6 +17,7 @@ export const MAX_POST_VIDEO_BYTES = 15 * 1024 * 1024;
 export const MAX_POST_POSTER_BYTES = 1024 * 1024;
 /** Length of an automatically generated video clip (Veo supports 4, 6 or 8 seconds). */
 export const GENERATED_VIDEO_SECONDS = 8;
+export const MAX_POST_REPLIES = 3;
 export const POST_BODY_LIMIT = 21 * 1024 * 1024;
 /** Manual attachment as a data URL: PNG/JPEG up to 5 MB or MP4 up to 15 MB. */
 export const MEDIA_DATA_URL = /^data:(image\/(png|jpeg)|video\/mp4);base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -37,6 +38,11 @@ export const postInput = z
       .string()
       .max(Math.ceil(MAX_POST_POSTER_BYTES / 3) * 4 + 'data:image/jpeg;base64,'.length)
       .regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/)
+      .optional(),
+    /** X·Threads only: follow-up texts the account posts as a chain of its own replies right after the post. */
+    replies: z
+      .array(z.string().trim().min(1, '답글 내용을 입력해 주세요.').max(500))
+      .max(MAX_POST_REPLIES)
       .optional(),
   })
   .strict();
@@ -170,7 +176,10 @@ export interface Project {
   revision: number;
   profileReviewedAt: string | null;
 }
-export interface Post extends Omit<PostInput, 'image' | 'poster'> {
+export interface Post extends Omit<PostInput, 'image' | 'poster' | 'replies'> {
+  replies: string[];
+  /** Ids of the replies already posted, in chain order (direct publishing only). */
+  replyIds?: string[];
   format?: 'text' | 'image' | 'video';
   assetId?: string | null;
   posterAssetId?: string | null;
@@ -211,6 +220,9 @@ export interface AuthOptions {
   local: boolean;
   google: boolean;
 }
+/** Link to a posted reply when it can be built from its id alone (Threads links need a permalink lookup). */
+export const replyUrl = (channel: Channel, id: string) =>
+  channel === 'x' ? `https://x.com/i/web/status/${id}` : null;
 export const CHANNEL_LABELS: Record<Channel, string> = { x: 'X', threads: 'Threads', instagram: 'Instagram' };
 export const STATUS_LABELS: Record<PostStatus, string> = { draft: '초안', approved: '승인됨' };
 

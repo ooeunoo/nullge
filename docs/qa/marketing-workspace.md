@@ -26,3 +26,8 @@
 
 - `make verify` 통과: 테스트 110개(18개 파일). 새 테스트 `tests/channel-board.test.ts`: 유지 → 시험 중 → 후보 → 중단 순서, 결과·날짜 저장, 다른 제품 수정 거절, 거꾸로 된 기간 거절.
 - 로컬 화면: mellow에 채널 4개(시험 중 2, 후보 2)를 넣어 보드를 확인한 뒤 예시 데이터를 지웠다.
+
+## 2026-10-10 · 답글 이어 쓰기 (X·Threads)
+
+- 새 테스트 `tests/reply-threads.test.ts`(6개): 계약 검사(최대 3개, 1~500자), Instagram·Buffer 계정 거절, X 가중 길이 초과 답글 거절, X 체인 순서와 `in_reply_to_tweet_id`, Threads 답글마다 컨테이너+게시와 `reply_to_id` 연결, 중간 실패 시 `published` 유지·`publishError` 기록·다음 tick 재시도 없음, 답글 수정 시 승인·예약 해제와 답글 생략 저장 시 유지.
+- 외부 API는 모두 가짜 응답으로 확인했다. 실제 X·Threads 계정으로 답글 체인을 올려 보는 확인은 배포 뒤 첫 게시에서 한다.

@@ -925,6 +925,39 @@ h1 {
   margin-top: -16px;
   margin-bottom: 25px;
 }
+.reply-fields {
+  margin-bottom: 25px;
+}
+.reply-fields-title {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.reply-field textarea {
+  display: block;
+  min-height: 80px;
+  margin-bottom: 23px;
+}
+.reply-field .caption-tools {
+  margin-bottom: 16px;
+}
+.phone-post-reply,
+.preview-reply {
+  margin: 0 14px 12px 28px;
+  padding-left: 12px;
+  border-left: 2px solid #3a423a;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.preview-reply {
+  margin: 0 0 8px 14px;
+  border-left-color: var(--line);
+}
 .text-button {
   background: none;
   border: 0;

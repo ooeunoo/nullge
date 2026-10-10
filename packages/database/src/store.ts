@@ -68,8 +68,8 @@ export class Store {
     const [projects, posts, activities] = await Promise.all([
       this.db.query('SELECT * FROM projects WHERE "workspaceId"=$1 ORDER BY name', [workspaceId]),
       this.db.query(
-        `SELECT p.*, CASE WHEN x."postId" IS NULL THEN NULL ELSE to_jsonb(x) - 'postId' - 'recordedBy' END metrics
-         FROM posts p LEFT JOIN post_metrics x ON x."postId"=p.id
+        `SELECT p.*, CASE WHEN x."postId" IS NULL THEN NULL ELSE to_jsonb(x) - 'postId' - 'recordedBy' END metrics, j."replyIds"
+         FROM posts p LEFT JOIN post_metrics x ON x."postId"=p.id LEFT JOIN publication_jobs j ON j."postId"=p.id
          WHERE p."workspaceId"=$1 ORDER BY p."updatedAt" DESC LIMIT 200`,
         [workspaceId],
       ),
@@ -108,7 +108,7 @@ export class Store {
           ? await this.saveMedia(manager, workspaceId, project.id, poster)
           : null;
       const [post] = await manager.query(
-        `INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",format,"assetId","posterAssetId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+        `INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",format,"assetId","posterAssetId",replies) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
         [
           randomUUID(),
           workspaceId,
@@ -122,6 +122,7 @@ export class Store {
           media ? media.format : 'text',
           assetId,
           posterAssetId,
+          JSON.stringify(input.replies ?? []),
         ],
       );
       await this.event(manager, workspaceId, project.id, actorId, 'post_created', post.title, post.id);
@@ -146,7 +147,8 @@ export class Store {
         status='draft',"approvedAt"=NULL,"approvedBy"=NULL,"profileRevision"=$10,revision=revision+1,"updatedAt"=now(),
         "assetId"=COALESCE($11::uuid,"assetId"),format=CASE WHEN $11::uuid IS NULL THEN format ELSE $12::text END,
         "posterAssetId"=CASE WHEN $11::uuid IS NULL THEN (CASE WHEN format='video' THEN COALESCE($13::uuid,"posterAssetId") ELSE "posterAssetId" END) ELSE $13::uuid END,
-        "sourceAssetId"=CASE WHEN $11::uuid IS NULL THEN "sourceAssetId" ELSE NULL END
+        "sourceAssetId"=CASE WHEN $11::uuid IS NULL THEN "sourceAssetId" ELSE NULL END,
+        replies=COALESCE($14::jsonb,replies)
         WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3 AND revision=$4 AND "publishStatus" IS NULL RETURNING *) SELECT * FROM changed`,
         [
           workspaceId,
@@ -162,6 +164,8 @@ export class Store {
           assetId,
           media ? media.format : null,
           posterAssetId,
+          // Replies are post content: saving them bumps the revision and resets approval like the caption does.
+          input.replies === undefined ? null : JSON.stringify(input.replies),
         ],
       );
       if (!post)

@@ -68,3 +68,12 @@
 - 제품 화면에서 메시지 실험 아래에 네 칸 보드. 후보를 "시험 시작"하면 오늘부터 14일 기간이 자동으로 잡힌다. 시험 중이 셋을 넘거나 기간이 끝난 채널이 있으면 안내 문구가 바뀐다.
 - API: `GET/POST projects/:slug/channel-tests`, `PATCH projects/:slug/channel-tests/:id`.
 - 제품 화면 순서: 메시지 실험 → 채널 보드 → 콘텐츠 목록 → 자동 생성 이력.
+
+## 답글 이어 쓰기 (X·Threads)
+
+- 콘텐츠에 이어 쓰는 답글을 최대 3개(각 500자, 채널 길이 규칙은 본문과 같음: X 가중 280자, Threads 500자) 둘 수 있다. 게시하면 본문 → 답글 1(본문에 답글) → 답글 2(답글 1에 답글) → 답글 3 순서로 내 계정이 이어 단다. "첫 줄은 훅, 답은 내 답글에서" 형식용.
+- 저장: `posts.replies`(jsonb 문자열 배열), `publication_jobs."replyIds"`(올린 답글 id, 체인 순서). 답글은 본문의 일부라 수정하면 버전이 오르고 승인·예약이 풀린다. 답글 없이 저장 요청하면 기존 답글을 유지한다.
+- 검사: Instagram은 답글 불가("답글 이어 쓰기는 X·Threads만 돼요."), Buffer 연결 계정도 불가("답글 이어 쓰기는 직접 연결한 계정에서만 돼요."). 예약도 같은 검사를 거친다.
+- 게시(직접 연결만): 본문이 `published`로 기록된 뒤 같은 tick에서 답글을 차례로 올린다. X는 `POST /2/tweets {text, reply.in_reply_to_tweet_id}`, Threads는 `POST /{user}/threads {media_type:TEXT, text, reply_to_id}` → 컨테이너 상태가 FINISHED가 될 때까지 최대 약 8초 확인 → `POST /{user}/threads_publish`. 답글 하나가 올라갈 때마다 id를 바로 저장한다.
+- 실패: 체인을 멈추고 다시 시도하지 않는다. 게시 상태는 `published`로 두고 `posts."publishError"`에 "답글 n/m개까지 올렸어요. 나머지는 직접 올려 주세요: 이유"를 남긴다. 작업이 이미 `published`라 이후 tick이 다시 집지 않는다. 체인 도중 프로세스가 멈추면 "답글을 다 올렸는지 확인하지 못했어요" 문구가 남는다.
+- 화면: 편집 화면에서 채널이 X·Threads일 때 "이어 쓰는 답글" 칸(추가·빼기, 글자 수). 미리보기와 게시 확인에 답글이 "↳"로 들여 보인다. 게시 뒤에는 올린 답글 수와 X 답글 링크를 보여 준다(Threads 답글 링크는 따로 조회하지 않는다).

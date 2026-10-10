@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   FileText,
+  Plus,
   ShieldCheck,
   SlidersHorizontal,
   Trash2,
@@ -13,6 +14,7 @@ import {
 import {
   CHANNEL_LABELS,
   MAX_POST_IMAGE_BYTES,
+  MAX_POST_REPLIES,
   MAX_POST_VIDEO_BYTES,
   type Post,
   type PostInput,
@@ -50,7 +52,10 @@ export function Editor({
     brief: post?.brief || '',
     channel: post?.channel || 'x',
     language: post?.language || 'ko',
+    replies: post?.replies || [],
   });
+  const replies = form.replies || [],
+    threaded = form.channel !== 'instagram';
   const [imageName, setImageName] = useState(''),
     [imageError, setImageError] = useState(''),
     [reading, setReading] = useState(false);
@@ -112,13 +117,22 @@ export function Editor({
     setForm((p) => ({ ...p, [key]: value }));
     setDirty(true);
   };
+  const setReplies = (next: string[]) => {
+    setForm((p) => ({ ...p, replies: next }));
+    setDirty(true);
+  };
   async function save(event: FormEvent) {
     event.preventDefault();
     if (busy || reading) return;
     try {
       const result = await mutate<Post>(
         `projects/${project.slug}/posts${post ? `/${post.id}` : ''}`,
-        { ...form, ...(post ? { revision: post.revision } : {}) },
+        {
+          ...form,
+          // Empty reply boxes are dropped; Instagram has no reply threads.
+          replies: threaded ? replies.filter((r) => r.trim()) : [],
+          ...(post ? { revision: post.revision } : {}),
+        },
         post ? 'PATCH' : 'POST',
       );
       if (!post) window.location.assign(`${projectPath(project)}/${result.id}`);
@@ -226,6 +240,45 @@ export function Editor({
                 문구 복사
               </button>
             </div>
+            {threaded && (
+              <div className="reply-fields">
+                <p className="reply-fields-title">
+                  이어 쓰는 답글
+                  <span className="field-hint">
+                    게시 직후 내 계정이 본문에 답글로 이어 달아요. 최대 {MAX_POST_REPLIES}개
+                  </span>
+                </p>
+                {replies.map((reply, i) => (
+                  <div className="reply-field" key={i}>
+                    <textarea
+                      aria-label={`${i + 1}번째 답글`}
+                      rows={3}
+                      maxLength={500}
+                      value={reply}
+                      onChange={(e) => setReplies(replies.map((r, k) => (k === i ? e.target.value : r)))}
+                      placeholder={i === 0 ? '본문에 이어 붙일 첫 답글' : '앞 답글에 이어 붙일 내용'}
+                    />
+                    <div className="caption-tools">
+                      <span>{Array.from(reply).length}자</span>
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => setReplies(replies.filter((_, k) => k !== i))}
+                      >
+                        <Trash2 size={14} />
+                        답글 빼기
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {replies.length < MAX_POST_REPLIES && (
+                  <button type="button" className="text-button" onClick={() => setReplies([...replies, ''])}>
+                    <Plus size={14} />
+                    답글 추가
+                  </button>
+                )}
+              </div>
+            )}
             <label>
               {post?.assetId ? '미디어 교체' : '미디어 첨부'}
               <span className="field-hint">
@@ -366,6 +419,15 @@ export function Editor({
                 )}
                 {form.caption || '작성한 문구가 여기에 표시돼요.'}
               </p>
+              {threaded &&
+                replies
+                  .filter((r) => r.trim())
+                  .map((r, i) => (
+                    <p className="phone-post-reply" key={i}>
+                      <span aria-hidden="true">↳ </span>
+                      {r}
+                    </p>
+                  ))}
             </div>
             {(form.image?.startsWith('data:video/') || (!form.image && post?.format === 'video')) &&
               form.channel !== 'instagram' && (

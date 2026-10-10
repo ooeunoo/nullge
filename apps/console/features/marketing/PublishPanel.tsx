@@ -5,6 +5,7 @@ import {
   CHANNEL_LABELS,
   LANGUAGE_LABELS,
   isScheduled,
+  replyUrl,
   type Post,
   type Project,
   type Connection,
@@ -63,6 +64,21 @@ export function PublishPanel({ project, post }: { project: Project; post: Post }
               <ArrowUpRight size={14} />
             </a>
           )}
+          {!!post.replyIds?.length && (
+            <p className="muted">
+              답글 {post.replyIds.length}/{post.replies.length}개를 이어 올렸어요.
+              {post.replyIds.map((id, i) => {
+                const url = replyUrl(post.channel, id);
+                return url ? (
+                  <a key={id} className="text-button" href={url} target="_blank" rel="noreferrer">
+                    {' '}
+                    답글 {i + 1}
+                    <ArrowUpRight size={13} />
+                  </a>
+                ) : null;
+              })}
+            </p>
+          )}
           <p className="muted">
             게시 요청 이후에는 이 콘텐츠를 수정하거나 다시 게시하지 않아요. 상태를 확인하려면 새로고침해
             주세요.
@@ -109,6 +125,12 @@ export function PublishPanel({ project, post }: { project: Project; post: Post }
                 </strong>
               </p>
               <p className="preview-copy">{post.caption}</p>
+              {(post.replies || []).map((r, i) => (
+                <p className="preview-reply" key={i}>
+                  <span aria-hidden="true">↳ </span>
+                  {r}
+                </p>
+              ))}
               <p className="field-hint">
                 현재 저장·승인된 문구와 미디어를 공개 게시합니다. SNS API 이용료가 별도로 발생할 수 있어요.
               </p>

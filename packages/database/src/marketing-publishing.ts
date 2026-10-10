@@ -3,6 +3,7 @@ import type { DataSource, EntityManager } from 'typeorm';
 import {
   CHANNEL_LABELS,
   LANGUAGE_LABELS,
+  MAX_POST_REPLIES,
   type Channel,
   type Language,
   type Post,
@@ -26,13 +27,28 @@ export function validatePublish(post: Post) {
       400,
       '영상의 직접 게시는 Instagram만 지원해요. 다른 채널은 원본을 내려받아 게시해 주세요.',
     );
-  const count = Array.from(post.caption).reduce(
-    (n, c) => n + (post.channel === 'x' && c.codePointAt(0)! > 0x10ff ? 2 : 1),
+  if (!fitsChannel(post.channel, post.caption))
+    throw new StoreError(400, '채널의 문구 길이 제한을 초과합니다.');
+  const replies = post.replies ?? [];
+  if (replies.length && post.channel === 'instagram')
+    throw new StoreError(400, '답글 이어 쓰기는 X·Threads만 돼요.');
+  if (replies.length > MAX_POST_REPLIES)
+    throw new StoreError(400, `답글은 ${MAX_POST_REPLIES}개까지 이어 쓸 수 있어요.`);
+  replies.forEach((r, i) => {
+    if (!r.trim()) throw new StoreError(400, `${i + 1}번째 답글이 비어 있어요.`);
+    if (!fitsChannel(post.channel, r))
+      throw new StoreError(400, `${i + 1}번째 답글이 채널의 길이 제한을 넘어요.`);
+  });
+}
+/** X counts characters above U+10FF (Hangul, CJK, emoji) twice. */
+function fitsChannel(channel: Channel, text: string) {
+  const count = Array.from(text).reduce(
+    (n, c) => n + (channel === 'x' && c.codePointAt(0)! > 0x10ff ? 2 : 1),
     0,
   );
-  if (count > { x: 280, threads: 500, instagram: 2200 }[post.channel])
-    throw new StoreError(400, '채널의 문구 길이 제한을 초과합니다.');
+  return count <= { x: 280, threads: 500, instagram: 2200 }[channel];
 }
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 function signature(w: string, id: string, expires: string) {
   const key = process.env.MARKETING_SECRET_KEY;
   if (!key || !/^[a-f0-9]{64}$/i.test(key)) throw new StoreError(503, '미디어 서명 키가 없습니다.');
@@ -89,6 +105,8 @@ export class MarketingPublisher {
         `${LANGUAGE_LABELS[post.language as Language]} ${CHANNEL_LABELS[post.channel as Channel]} 계정을 먼저 연결해 주세요.`,
       );
     if (c.revision !== connectionRevision) throw new StoreError(409, '게시할 계정을 다시 확인해 주세요.');
+    if ((c.provider || 'direct') === 'buffer' && post.replies?.length)
+      throw new StoreError(400, '답글 이어 쓰기는 직접 연결한 계정에서만 돼요.');
     if (
       c.expiresAt &&
       new Date(c.expiresAt).getTime() < Date.now() + 60000 &&
@@ -265,6 +283,83 @@ export class MarketingPublisher {
       );
     });
   }
+  /**
+   * Posts the follow-up texts as a chain of the account's own replies, after the main post is recorded as published
+   * so nothing here can republish it. Each posted id is saved before the next call; a failure stops the chain and is
+   * never retried, because the job is already published and no later tick picks it up.
+   */
+  private async postReplies(
+    j: any,
+    p: Post & { userId: string },
+    auth: string,
+    base: string,
+    rootId: string,
+  ) {
+    const replies: string[] = p.replies ?? [];
+    if (!replies.length || p.channel === 'instagram') return;
+    // Stays visible only if the process stops mid-chain, so the operator knows to check the replies.
+    await this.db.query('UPDATE posts SET "publishError"=$2 WHERE id=$1', [
+      j.postId,
+      '답글을 다 올렸는지 확인하지 못했어요. SNS에서 답글을 확인해 주세요.',
+    ]);
+    let previous = rootId,
+      done = 0;
+    try {
+      for (const text of replies) {
+        previous =
+          p.channel === 'x'
+            ? await this.xReply(auth, text, previous)
+            : await this.threadsReply(p, auth, base, text, previous);
+        done++;
+        await this.db.query(
+          `UPDATE publication_jobs SET "replyIds"="replyIds"||$2::jsonb,"updatedAt"=now() WHERE id=$1`,
+          [j.id, JSON.stringify([previous])],
+        );
+      }
+      await this.db.query('UPDATE posts SET "publishError"=NULL WHERE id=$1', [j.postId]);
+    } catch (e) {
+      const reason = e instanceof StoreError ? e.message : '알 수 없는 오류';
+      await this.db.query('UPDATE posts SET "publishError"=$2 WHERE id=$1', [
+        j.postId,
+        `답글 ${done}/${replies.length}개까지 올렸어요. 나머지는 직접 올려 주세요: ${reason}`,
+      ]);
+    }
+  }
+  private async xReply(auth: string, text: string, to: string) {
+    const result = await providerJson<any>('https://api.x.com/2/tweets', auth, 'POST', {
+      text,
+      reply: { in_reply_to_tweet_id: to },
+    });
+    if (!/^\d+$/.test(result.data?.id)) throw new ProviderError(true);
+    return result.data.id as string;
+  }
+  private async threadsReply(p: { userId: string }, auth: string, base: string, text: string, to: string) {
+    const container = await providerJson<any>(
+      `${base}/${p.userId}/threads`,
+      auth,
+      'POST',
+      { media_type: 'TEXT', text, reply_to_id: to },
+      true,
+    );
+    if (!/^\d+$/.test(container.id)) throw new ProviderError(true);
+    // Text containers are usually ready at once; wait a few seconds at most before the single publish call.
+    for (let i = 0; ; i++) {
+      const { status } = await providerJson<any>(`${base}/${container.id}?fields=status`, auth);
+      if (status === 'FINISHED') break;
+      if (['ERROR', 'EXPIRED'].includes(status) || i >= 5)
+        throw new StoreError(400, 'Threads가 답글을 준비하지 못했어요.');
+      await wait(1500);
+    }
+    const result = await providerJson<any>(
+      `${base}/${p.userId}/threads_publish`,
+      auth,
+      'POST',
+      { creation_id: container.id },
+      true,
+    );
+    if (!/^\d+$/.test(result.id)) throw new ProviderError(true);
+    return result.id as string;
+  }
   async tick() {
     await this.publishDue();
     const stale = await this.db.query(
@@ -383,6 +478,7 @@ export class MarketingPublisher {
             remoteId: result.data.id,
             url: `https://x.com/i/web/status/${result.data.id}`,
           });
+          await this.postReplies(j, p, auth, base, result.data.id);
           return;
         }
         const media = p.assetId ? signedAssetUrl(j.workspaceId, p.assetId) : '';
@@ -460,6 +556,7 @@ export class MarketingPublisher {
             url: url.toString(),
           });
       } catch {}
+      await this.postReplies(j, p, auth, base, result.id);
     } catch (e) {
       if (j.status === 'processing' && e instanceof ProviderError && !e.uncertain) return;
       await this.state(j, e instanceof ProviderError && e.uncertain ? 'uncertain' : 'failed', {
