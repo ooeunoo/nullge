@@ -31,3 +31,8 @@
 
 - 새 테스트 `tests/reply-threads.test.ts`(6개): 계약 검사(최대 3개, 1~500자), Instagram·Buffer 계정 거절, X 가중 길이 초과 답글 거절, X 체인 순서와 `in_reply_to_tweet_id`, Threads 답글마다 컨테이너+게시와 `reply_to_id` 연결, 중간 실패 시 `published` 유지·`publishError` 기록·다음 tick 재시도 없음, 답글 수정 시 승인·예약 해제와 답글 생략 저장 시 유지.
 - 외부 API는 모두 가짜 응답으로 확인했다. 실제 X·Threads 계정으로 답글 체인을 올려 보는 확인은 배포 뒤 첫 게시에서 한다.
+
+## 2026-10-11 · Threads 주제 태그
+
+- `tests/reply-threads.test.ts`에 3개 추가: 계약 검사(공백 제거, 1~50자, `.`·`&` 거절, 빈 값은 null), X·Buffer 계정 거절, Threads 본문 컨테이너에만 `topic_tag`가 들어가고 답글에는 없음, 생략 저장 시 유지·빈 값 저장 시 삭제, 대시보드 응답에 포함.
+- `make verify`: doctor·typecheck·test(119개)·build 통과. storage-check는 로컬 디스크 여유 부족(환경 문제)으로만 실패했다. 실제 Threads 계정 확인은 배포 뒤 첫 태그 게시에서 한다.

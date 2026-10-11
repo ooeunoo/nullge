@@ -77,3 +77,10 @@
 - 게시(직접 연결만): 본문이 `published`로 기록된 뒤 같은 tick에서 답글을 차례로 올린다. X는 `POST /2/tweets {text, reply.in_reply_to_tweet_id}`, Threads는 `POST /{user}/threads {media_type:TEXT, text, reply_to_id}` → 컨테이너 상태가 FINISHED가 될 때까지 최대 약 8초 확인 → `POST /{user}/threads_publish`. 답글 하나가 올라갈 때마다 id를 바로 저장한다.
 - 실패: 체인을 멈추고 다시 시도하지 않는다. 게시 상태는 `published`로 두고 `posts."publishError"`에 "답글 n/m개까지 올렸어요. 나머지는 직접 올려 주세요: 이유"를 남긴다. 작업이 이미 `published`라 이후 tick이 다시 집지 않는다. 체인 도중 프로세스가 멈추면 "답글을 다 올렸는지 확인하지 못했어요" 문구가 남는다.
 - 화면: 편집 화면에서 채널이 X·Threads일 때 "이어 쓰는 답글" 칸(추가·빼기, 글자 수). 미리보기와 게시 확인에 답글이 "↳"로 들여 보인다. 게시 뒤에는 올린 답글 수와 X 답글 링크를 보여 준다(Threads 답글 링크는 따로 조회하지 않는다).
+
+## Threads 주제 태그
+
+- 콘텐츠마다 Threads 주제 태그를 하나 둘 수 있다(`posts."topicTag"`, text, 없으면 null). API 필드 이름은 `topicTag`(`POST/PATCH projects/:slug/posts`). 앞뒤 공백을 지우고 1~50자, 마침표(.)와 &는 쓸 수 없다(Threads API 규칙). 빈 문자열이나 null을 보내면 지우고, 필드를 빼면 저장된 값을 유지한다. 태그는 본문의 일부라 수정하면 버전이 오르고 승인·예약이 풀린다.
+- 검사: Threads가 아닌 채널은 거절("주제 태그는 Threads만 돼요."), Buffer 연결 계정도 거절("주제 태그는 직접 연결한 계정에서만 돼요.").
+- 게시: 직접 연결한 Threads 본문 컨테이너 `POST /{user}/threads`에만 `topic_tag`를 넣는다. 답글에는 넣지 않는다. 태그가 없거나 이전에 만든 게시 작업은 그대로 태그 없이 올라간다.
+- 화면: 편집 화면에서 채널이 Threads일 때만 "주제 태그 (Threads)" 한 줄 입력.

@@ -108,7 +108,7 @@ export class Store {
           ? await this.saveMedia(manager, workspaceId, project.id, poster)
           : null;
       const [post] = await manager.query(
-        `INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",format,"assetId","posterAssetId",replies) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+        `INSERT INTO posts (id,"workspaceId","projectId",title,caption,brief,channel,language,"profileRevision",format,"assetId","posterAssetId",replies,"topicTag") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
         [
           randomUUID(),
           workspaceId,
@@ -123,6 +123,7 @@ export class Store {
           assetId,
           posterAssetId,
           JSON.stringify(input.replies ?? []),
+          input.topicTag ?? null,
         ],
       );
       await this.event(manager, workspaceId, project.id, actorId, 'post_created', post.title, post.id);
@@ -148,7 +149,8 @@ export class Store {
         "assetId"=COALESCE($11::uuid,"assetId"),format=CASE WHEN $11::uuid IS NULL THEN format ELSE $12::text END,
         "posterAssetId"=CASE WHEN $11::uuid IS NULL THEN (CASE WHEN format='video' THEN COALESCE($13::uuid,"posterAssetId") ELSE "posterAssetId" END) ELSE $13::uuid END,
         "sourceAssetId"=CASE WHEN $11::uuid IS NULL THEN "sourceAssetId" ELSE NULL END,
-        replies=COALESCE($14::jsonb,replies)
+        replies=COALESCE($14::jsonb,replies),
+        "topicTag"=CASE WHEN $15::boolean THEN $16::text ELSE "topicTag" END
         WHERE "workspaceId"=$1 AND "projectId"=$2 AND id=$3 AND revision=$4 AND "publishStatus" IS NULL RETURNING *) SELECT * FROM changed`,
         [
           workspaceId,
@@ -166,6 +168,9 @@ export class Store {
           posterAssetId,
           // Replies are post content: saving them bumps the revision and resets approval like the caption does.
           input.replies === undefined ? null : JSON.stringify(input.replies),
+          // Same for the topic tag; null or an empty tag clears it, leaving it out keeps the saved one.
+          input.topicTag !== undefined,
+          input.topicTag ?? null,
         ],
       );
       if (!post)

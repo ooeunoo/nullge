@@ -18,6 +18,7 @@ export const MAX_POST_POSTER_BYTES = 1024 * 1024;
 /** Length of an automatically generated video clip (Veo supports 4, 6 or 8 seconds). */
 export const GENERATED_VIDEO_SECONDS = 8;
 export const MAX_POST_REPLIES = 3;
+export const MAX_TOPIC_TAG_LENGTH = 50;
 export const POST_BODY_LIMIT = 21 * 1024 * 1024;
 /** Manual attachment as a data URL: PNG/JPEG up to 5 MB or MP4 up to 15 MB. */
 export const MEDIA_DATA_URL = /^data:(image\/(png|jpeg)|video\/mp4);base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -43,6 +44,15 @@ export const postInput = z
     replies: z
       .array(z.string().trim().min(1, '답글 내용을 입력해 주세요.').max(500))
       .max(MAX_POST_REPLIES)
+      .optional(),
+    /** Threads only: one topic tag for the post (Threads refuses `.` and `&`). Empty clears it; omitted keeps it. */
+    topicTag: z
+      .string()
+      .trim()
+      .max(MAX_TOPIC_TAG_LENGTH, `주제 태그는 ${MAX_TOPIC_TAG_LENGTH}자까지 쓸 수 있어요.`)
+      .refine((t) => !/[.&]/.test(t), '주제 태그에는 마침표(.)와 &를 쓸 수 없어요.')
+      .transform((t) => t || null)
+      .nullable()
       .optional(),
   })
   .strict();
@@ -176,8 +186,10 @@ export interface Project {
   revision: number;
   profileReviewedAt: string | null;
 }
-export interface Post extends Omit<PostInput, 'image' | 'poster' | 'replies'> {
+export interface Post extends Omit<PostInput, 'image' | 'poster' | 'replies' | 'topicTag'> {
   replies: string[];
+  /** Threads topic tag sent with the main post; null when none. */
+  topicTag?: string | null;
   /** Ids of the replies already posted, in chain order (direct publishing only). */
   replyIds?: string[];
   format?: 'text' | 'image' | 'video';

@@ -16,6 +16,7 @@ import {
   MAX_POST_IMAGE_BYTES,
   MAX_POST_REPLIES,
   MAX_POST_VIDEO_BYTES,
+  MAX_TOPIC_TAG_LENGTH,
   type Post,
   type PostInput,
   type Project,
@@ -53,6 +54,7 @@ export function Editor({
     channel: post?.channel || 'x',
     language: post?.language || 'ko',
     replies: post?.replies || [],
+    topicTag: post?.topicTag || '',
   });
   const replies = form.replies || [],
     threaded = form.channel !== 'instagram';
@@ -131,6 +133,8 @@ export function Editor({
           ...form,
           // Empty reply boxes are dropped; Instagram has no reply threads.
           replies: threaded ? replies.filter((r) => r.trim()) : [],
+          // Only Threads takes a topic tag; an empty box clears it.
+          topicTag: form.channel === 'threads' ? form.topicTag?.trim() || null : null,
           ...(post ? { revision: post.revision } : {}),
         },
         post ? 'PATCH' : 'POST',
@@ -240,6 +244,18 @@ export function Editor({
                 문구 복사
               </button>
             </div>
+            {form.channel === 'threads' && (
+              <label>
+                주제 태그 (Threads)
+                <span className="field-hint">게시물에 붙일 주제 하나. 마침표(.)와 &는 쓸 수 없어요</span>
+                <input
+                  maxLength={MAX_TOPIC_TAG_LENGTH}
+                  value={form.topicTag || ''}
+                  onChange={(e) => update('topicTag', e.target.value)}
+                  placeholder="예: 영어공부"
+                />
+              </label>
+            )}
             {threaded && (
               <div className="reply-fields">
                 <p className="reply-fields-title">

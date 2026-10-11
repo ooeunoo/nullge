@@ -286,3 +286,108 @@ describe('reply threads', () => {
     expect(kept.replies).toEqual(['고친 답글']);
   });
 });
+
+describe('Threads topic tag', () => {
+  const base = { title: 't', caption: 'c', brief: '', channel: 'threads', language: 'ko' } as const;
+  it('validates the tag in the contract: trimmed, 1–50 characters, no "." or "&", empty clears it', () => {
+    expect(postInput.parse({ ...base, topicTag: '  영어공부 ' }).topicTag).toBe('영어공부');
+    expect(postInput.parse({ ...base, topicTag: '' }).topicTag).toBeNull();
+    expect(postInput.parse({ ...base, topicTag: '   ' }).topicTag).toBeNull();
+    expect(postInput.parse({ ...base, topicTag: null }).topicTag).toBeNull();
+    expect(postInput.parse(base).topicTag).toBeUndefined();
+    expect(postInput.safeParse({ ...base, topicTag: '가'.repeat(50) }).success).toBe(true);
+    expect(postInput.safeParse({ ...base, topicTag: '가'.repeat(51) }).success).toBe(false);
+    expect(postInput.safeParse({ ...base, topicTag: 'node.js' }).success).toBe(false);
+    expect(postInput.safeParse({ ...base, topicTag: 'Q&A' }).success).toBe(false);
+  });
+
+  it('refuses a tag on other channels and on Buffer connections', async () => {
+    const x = await store.create(WORKSPACE_ID, 'mellow', actor, { ...base, channel: 'x', topicTag: '영어' });
+    const okX = await store.transition(WORKSPACE_ID, 'mellow', x.id, actor, x.revision, 'approve');
+    await expect(
+      publisher.enqueue(WORKSPACE_ID, 'mellow', okX.id, actor, okX.revision, await revisionOf('x')),
+    ).rejects.toMatchObject({ status: 400, message: '주제 태그는 Threads만 돼요.' });
+    const en = await store.create(WORKSPACE_ID, 'mellow', actor, {
+      ...base,
+      language: 'en',
+      topicTag: 'English',
+    });
+    const okEn = await store.transition(WORKSPACE_ID, 'mellow', en.id, actor, en.revision, 'approve');
+    await expect(
+      publisher.enqueue(
+        WORKSPACE_ID,
+        'mellow',
+        okEn.id,
+        actor,
+        okEn.revision,
+        await revisionOf('threads', 'en'),
+      ),
+    ).rejects.toMatchObject({ status: 400, message: '주제 태그는 직접 연결한 계정에서만 돼요.' });
+  });
+
+  it('sends topic_tag on the main Threads container only, and edits keep or clear it', async () => {
+    const created = await store.create(WORKSPACE_ID, 'mellow', actor, {
+      ...base,
+      caption: '태그 붙은 글',
+      replies: ['답글'],
+      topicTag: '영어공부',
+    });
+    expect(created.topicTag).toBe('영어공부');
+    const kept = await store.update(WORKSPACE_ID, 'mellow', created.id, actor, {
+      ...base,
+      caption: '태그 붙은 글',
+      replies: ['답글'],
+      revision: created.revision,
+    });
+    expect(kept.topicTag).toBe('영어공부');
+    const listed = (await store.dashboard(WORKSPACE_ID)).posts.find((p) => p.id === created.id)!;
+    expect(listed.topicTag).toBe('영어공부');
+    const post = await store.transition(WORKSPACE_ID, 'mellow', kept.id, actor, kept.revision, 'approve');
+    await publisher.enqueue(
+      WORKSPACE_ID,
+      'mellow',
+      post.id,
+      actor,
+      post.revision,
+      await revisionOf('threads'),
+    );
+    let n = 700;
+    const containers: Record<string, string>[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (u: any, init?: RequestInit) => {
+        const s = String(u);
+        if (s.includes('/me?')) return json({ id: '321', username: 'mellow_kr' });
+        if (s.endsWith('/321/threads')) {
+          containers.push(Object.fromEntries(new URLSearchParams(String(init!.body))));
+          return json({ id: String(++n) });
+        }
+        if (s.includes('fields=status')) return json({ status: 'FINISHED' });
+        if (s.endsWith('/321/threads_publish')) return json({ id: String(++n) });
+        if (s.includes('fields=permalink'))
+          return json({ permalink: 'https://www.threads.net/@mellow_kr/post/tag' });
+        throw Error(`unexpected ${s}`);
+      }),
+    );
+    await publisher.tick();
+    await db.query(`UPDATE publication_jobs SET "updatedAt"=now()-interval '20 seconds' WHERE "postId"=$1`, [
+      post.id,
+    ]);
+    await publisher.tick();
+    expect(containers[0]).toEqual({
+      media_type: 'TEXT',
+      text: '태그 붙은 글',
+      auto_publish_text: 'false',
+      topic_tag: '영어공부',
+    });
+    expect(containers[1]).not.toHaveProperty('topic_tag');
+    expect((await row(post.id)).publishStatus).toBe('published');
+
+    const other = await store.create(WORKSPACE_ID, 'mellow', actor, { ...base, topicTag: '지울 태그' });
+    const cleared = await store.update(WORKSPACE_ID, 'mellow', other.id, actor, {
+      ...postInput.parse({ ...base, topicTag: '' }),
+      revision: other.revision,
+    });
+    expect(cleared.topicTag).toBeNull();
+  });
+});

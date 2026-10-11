@@ -4,6 +4,7 @@ import {
   CHANNEL_LABELS,
   LANGUAGE_LABELS,
   MAX_POST_REPLIES,
+  MAX_TOPIC_TAG_LENGTH,
   type Channel,
   type Language,
   type Post,
@@ -39,6 +40,11 @@ export function validatePublish(post: Post) {
     if (!fitsChannel(post.channel, r))
       throw new StoreError(400, `${i + 1}번째 답글이 채널의 길이 제한을 넘어요.`);
   });
+  if (post.topicTag) {
+    if (post.channel !== 'threads') throw new StoreError(400, '주제 태그는 Threads만 돼요.');
+    if (Array.from(post.topicTag).length > MAX_TOPIC_TAG_LENGTH || /[.&]/.test(post.topicTag))
+      throw new StoreError(400, '주제 태그는 50자 이하, 마침표(.)와 & 없이 써 주세요.');
+  }
 }
 /** X counts characters above U+10FF (Hangul, CJK, emoji) twice. */
 function fitsChannel(channel: Channel, text: string) {
@@ -107,6 +113,8 @@ export class MarketingPublisher {
     if (c.revision !== connectionRevision) throw new StoreError(409, '게시할 계정을 다시 확인해 주세요.');
     if ((c.provider || 'direct') === 'buffer' && post.replies?.length)
       throw new StoreError(400, '답글 이어 쓰기는 직접 연결한 계정에서만 돼요.');
+    if ((c.provider || 'direct') === 'buffer' && post.topicTag)
+      throw new StoreError(400, '주제 태그는 직접 연결한 계정에서만 돼요.');
     if (
       c.expiresAt &&
       new Date(c.expiresAt).getTime() < Date.now() + 60000 &&
@@ -488,6 +496,8 @@ export class MarketingPublisher {
                 media_type: p.format === 'text' ? 'TEXT' : 'IMAGE',
                 text: p.caption,
                 ...(p.format === 'text' ? { auto_publish_text: false } : { image_url: media }),
+                // Older snapshots have no topicTag and are posted without one.
+                ...(p.topicTag ? { topic_tag: p.topicTag } : {}),
               }
             : {
                 caption: p.caption,

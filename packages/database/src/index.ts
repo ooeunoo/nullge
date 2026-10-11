@@ -15,6 +15,7 @@ import { MessageExperiments1791158400000 } from './message-migration';
 import { OperatorDesk1791244800000 } from './desk-migration';
 import { ChannelBoard1791331200000 } from './channel-board-migration';
 import { ReplyThreads1791417600000 } from './reply-thread-migration';
+import { ThreadsTopicTags1791504000000 } from './topic-tag-migration';
 import { VideoPosters1790560000000 } from './video-poster-migration';
 export { MarketingStore } from './marketing-store';
 export { MarketingWorker } from './marketing-worker';
@@ -51,6 +52,7 @@ export function database(url = process.env.DATABASE_URL) {
       OperatorDesk1791244800000,
       ChannelBoard1791331200000,
       ReplyThreads1791417600000,
+      ThreadsTopicTags1791504000000,
     ],
     migrationsTableName: 'nullge_migrations',
     extra: { max: 8, connectionTimeoutMillis: 5000 },
