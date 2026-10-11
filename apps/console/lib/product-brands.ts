@@ -24,18 +24,4 @@ export const productBrands: Record<
     source: 'apps/mobile/assets/icon.png',
     analyzed: '2026. 10. 02',
   },
-  kept: {
-    logo: '/brands/kept.png',
-    category: '성경 읽기 · 기도',
-    repository: '~/projects/eun/kept',
-    source: 'apps/mobile/assets/icon.png',
-    analyzed: '2026. 10. 02',
-  },
-  dotori: {
-    logo: '/brands/dotori.png',
-    category: '하루 플래너',
-    repository: '~/projects/eun/dotori',
-    source: 'design/exports/app-icon.png',
-    analyzed: '2026. 10. 02',
-  },
 };

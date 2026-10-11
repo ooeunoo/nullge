@@ -63,3 +63,13 @@ bootstrap은 신규 Movy를 포함한 5개 제품을 누락된 경우에만 등�
 - `currentProductCatalog`에서 세 제품을 걸러 bootstrap이 다시 넣지 않는다. 9월 25일 카탈로그와 minimo 정정 마이그레이션은 재현용으로 그대로 둔다.
 - 브랜드 등록·로고 파일·로그인 화면 문구에서 제거. 현재 제품: ClipIt, mellow, 다락방 카메라, Kept, Dotori.
 - 되돌리려면 카탈로그에 다시 추가한다(삭제된 프로필 이력은 복구되지 않는다).
+
+### Kept · Dotori 제거 (2026-10-11)
+
+운영자 지시로 Kept와 Dotori(두토리)를 Console에서 뺐다. 공개 회사 사이트(`www.nullge.com`)의 제품 카드는 이번 범위가 아니어서 그대로 둔다.
+
+- `ProductsRetired1791590400000` 마이그레이션이 10월 2일 제거와 같은 규칙으로 제품과 프로필 이력·이벤트·채널 연결·미게시 생성 기록을 지우고, 그 뒤 생긴 채널 보드(`channel_tests`)·메시지(`content_messages`)·운영 할 일(`operator_tasks`)도 함께 지운다. 마케팅 지출(`marketing_spend`)은 월 합계가 바뀌지 않도록 제품 연결만 끊고 남긴다. 콘텐츠(posts)가 있는 제품은 지우지 않고 남기며, 결과를 배포 로그 한 줄로 남긴다.
+- 삭제 로직은 `retireProducts`로 묶어 두 마이그레이션이 함께 쓴다(10월 2일 마이그레이션의 동작은 같다).
+- `currentProductCatalog`가 두 제품을 걸러 bootstrap이 다시 넣지 않는다. 10월 2일 카탈로그 파일은 재현용으로 그대로 둔다.
+- 브랜드 등록·로고 파일(`kept.png`, `dotori.png`)·로그인 화면 문구에서 제거. 현재 제품: ClipIt, mellow, 다락방 카메라.
+- 되돌리려면 카탈로그에 다시 추가한다(삭제된 프로필 이력은 복구되지 않는다).

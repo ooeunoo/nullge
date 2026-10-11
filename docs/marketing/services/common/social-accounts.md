@@ -34,6 +34,8 @@
 | 두토리 | ko | `dotori.kr` | `dotori_kr` | 두토리 다정한 하루 플래너 | https://dotori.nullge.com/ko/ |
 | 두토리 | en | `dotori.planner` | `dotoriplanner` | Dotori: Gentle Day Planner | https://dotori.nullge.com/ |
 
+Kept·두토리 행은 기록으로 남긴다. 두 제품은 2026-10-11 운영자 요청으로 Console에서 제거해 마케팅 대상이 아니다.
+
 아이디 규칙(2026-10-06 운영자 결정): 글로벌(영어) 계정은 꼬리 없이, 한국어 계정은 `_kr`을 붙인다(`@nike` / `@nikekorea` 방식). mellow는 기존 `@mellow.call`을 영어 글로벌 계정으로 바꾸고 한국어 `@mellow.call_kr`을 새로 만들었다. 기존 한국어 게시물 4개는 `@mellow.call`에 그대로 남아 있다. 운영자가 이미 만든 Instagram 계정은 `clipit_studio`, `clipit_studio_kr`, `attic.camera`, `attic.camera_kr`이다. 다른 제품의 아이디는 이 이름에 맞춰 표를 고친다.
 
 ## 소개글

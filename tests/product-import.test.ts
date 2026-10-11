@@ -12,6 +12,10 @@ import {
   ProductsRetired1790726400000,
   retiredProductSlugs,
 } from '../packages/database/src/products-retired-migration';
+import {
+  ProductsRetired1791590400000,
+  retiredProductSlugs20261011,
+} from '../packages/database/src/products-retired-20261011-migration';
 
 const adminUrl = process.env.NULLGE_TEST_DATABASE_ADMIN_URL || 'postgres://nullge@127.0.0.1:5549/postgres';
 const url = new URL(adminUrl);
@@ -187,6 +191,66 @@ it('removes retired products with their history but keeps one that already holds
     ).toEqual(['clipit', 'desk', 'mellow']);
     expect(await q.query('SELECT 1 FROM profile_versions WHERE "projectId"=$1', [minimo.id])).toHaveLength(0);
     expect(await q.query('SELECT 1 FROM posts WHERE "projectId"=$1', [desk.id])).toHaveLength(1);
+  } finally {
+    await q.rollbackTransaction();
+    await q.release();
+  }
+});
+
+it('removes Kept and Dotori with their board rows, keeps spend totals, and spares a product with posts', async () => {
+  const q = await legacyFixture();
+  try {
+    expect(
+      currentProductCatalog.map((p) => p.slug).filter((s) => retiredProductSlugs20261011.includes(s)),
+    ).toEqual([]);
+    const ids: Record<string, string> = {};
+    for (const slug of ['kept', 'dotori']) {
+      const [row] = await q.query(
+        "INSERT INTO projects (id,\"workspaceId\",slug,name,color,description,audience,facts,tone,avoid,website) VALUES ($1,$2,$3,$3,'#000000','','','','','','') RETURNING id",
+        [randomUUID(), WORKSPACE_ID, slug],
+      );
+      ids[slug] = row.id;
+      await q.query(
+        'INSERT INTO profile_versions ("workspaceId","projectId",revision,snapshot) VALUES ($1,$2,1,$3)',
+        [WORKSPACE_ID, row.id, '{}'],
+      );
+    }
+    await q.query('INSERT INTO channel_tests (id,"workspaceId","projectId",name) VALUES ($1,$2,$3,$4)', [
+      randomUUID(),
+      WORKSPACE_ID,
+      ids.kept,
+      'Instagram',
+    ]);
+    await q.query('INSERT INTO content_messages (id,"workspaceId","projectId",label) VALUES ($1,$2,$3,$4)', [
+      randomUUID(),
+      WORKSPACE_ID,
+      ids.kept,
+      '메시지',
+    ]);
+    await q.query('INSERT INTO operator_tasks (id,"workspaceId","projectId",title) VALUES ($1,$2,$3,$4)', [
+      randomUUID(),
+      WORKSPACE_ID,
+      ids.kept,
+      '할 일',
+    ]);
+    const spend = randomUUID();
+    await q.query(
+      `INSERT INTO marketing_spend (id,"workspaceId","projectId","spentOn",category,"amountKrw") VALUES ($1,$2,$3,'2026-10-05','ads',5000)`,
+      [spend, WORKSPACE_ID, ids.kept],
+    );
+    await q.query(
+      'INSERT INTO posts (id,"workspaceId","projectId",title,channel,language,"profileRevision") VALUES ($1,$2,$3,$4,$5,$6,1)',
+      [randomUUID(), WORKSPACE_ID, ids.dotori, '보존할 콘텐츠', 'x', 'ko'],
+    );
+    const migration = new ProductsRetired1791590400000();
+    await migration.up(q);
+    await migration.up(q);
+    const slugs = (await q.query('SELECT slug FROM projects')).map((r: { slug: string }) => r.slug);
+    expect(slugs).toContain('dotori');
+    expect(slugs).not.toContain('kept');
+    expect(await q.query('SELECT 1 FROM channel_tests WHERE "projectId"=$1', [ids.kept])).toHaveLength(0);
+    const [row] = await q.query('SELECT "projectId","amountKrw" FROM marketing_spend WHERE id=$1', [spend]);
+    expect(row).toEqual({ projectId: null, amountKrw: 5000 });
   } finally {
     await q.rollbackTransaction();
     await q.release();

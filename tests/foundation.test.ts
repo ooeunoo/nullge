@@ -42,16 +42,10 @@ afterAll(async () => {
 }, 15_000);
 
 describe('product boundaries and review workflow', () => {
-  it('starts with five populated, unreviewed products and no invented production posts', async () => {
+  it('starts with three populated, unreviewed products and no invented production posts', async () => {
     const dashboard = await store.dashboard(WORKSPACE_ID);
-    expect(dashboard.projects).toHaveLength(5);
-    expect(dashboard.projects.map((p) => p.slug).sort()).toEqual([
-      'atticcamera',
-      'clipit',
-      'dotori',
-      'kept',
-      'mellow',
-    ]);
+    expect(dashboard.projects).toHaveLength(3);
+    expect(dashboard.projects.map((p) => p.slug).sort()).toEqual(['atticcamera', 'clipit', 'mellow']);
     for (const project of dashboard.projects) {
       expect(
         profileInput.safeParse({

@@ -104,13 +104,13 @@ afterAll(async () => {
 
 describe('content guide data', () => {
   it('reads an empty guide as complete defaults and versions a saved guide with the profile', async () => {
-    const before = await store.project(WORKSPACE_ID, 'kept');
+    const before = await store.project(WORKSPACE_ID, 'atticcamera');
     expect(before.guide).toEqual(emptyGuide());
     const g = guide({
       pillars: [{ name: '오늘의 10분', description: '하루 순서' }],
       bannedPhrases: ['무조건'],
     });
-    const next = await saveGuide('kept', g);
+    const next = await saveGuide('atticcamera', g);
     expect(next.revision).toBe(before.revision + 1);
     expect(next.guide.pillars[0].name).toBe('오늘의 10분');
     const [v] = await db.query('SELECT snapshot FROM profile_versions WHERE "projectId"=$1 AND revision=$2', [
@@ -119,7 +119,7 @@ describe('content guide data', () => {
     ]);
     expect(v.snapshot.guide.bannedPhrases).toEqual(['무조건']);
     // A save without a guide keeps the stored one.
-    const kept = await store.updateProfile(WORKSPACE_ID, 'kept', actor, {
+    const kept = await store.updateProfile(WORKSPACE_ID, 'atticcamera', actor, {
       revision: next.revision,
       description: next.description,
       audience: next.audience,
@@ -141,9 +141,9 @@ describe('content guide data', () => {
       `data:image/png;base64,${png.toString('base64')}`,
     );
     const g = guide();
-    await expect(saveGuide('kept', { ...g, visual: { ...g.visual, logoAssetId: id } })).rejects.toMatchObject(
-      { status: 400 },
-    );
+    await expect(
+      saveGuide('atticcamera', { ...g, visual: { ...g.visual, logoAssetId: id } }),
+    ).rejects.toMatchObject({ status: 400 });
     const saved = await saveGuide('clipit', { ...g, visual: { ...g.visual, logoAssetId: id } });
     expect(saved.guide.visual.logoAssetId).toBe(id);
   });
@@ -186,7 +186,7 @@ describe('shared checks and prompts', () => {
     expect(withFixedHashtags('본문 #TAG', 'threads', g)).toBe('본문 #TAG');
   });
   it('adds guide sections only when the guide has content, and hook rules for planning', async () => {
-    const p = await store.project(WORKSPACE_ID, 'dotori');
+    const p = await store.project(WORKSPACE_ID, 'mellow');
     const plain = planInstructions({ ...p, guide: emptyGuide() }, true);
     expect(plain).not.toContain('Content pillars');
     expect(plain).toContain('first line is the hook');
@@ -210,19 +210,19 @@ describe('generation with checks and review', () => {
   async function run(items: unknown[], opts: Parameters<typeof withReview>[1] = {}) {
     const quote = await marketing.quote(
       WORKSPACE_ID,
-      'dotori',
+      'mellow',
       actor,
       generationInput.parse({ format: 'text' }),
     );
     expect(quote.lines.some((l) => l.label.includes('검수'))).toBe(true);
-    await marketing.confirm(WORKSPACE_ID, 'dotori', actor, quote.id);
+    await marketing.confirm(WORKSPACE_ID, 'mellow', actor, quote.id);
     const fetch = vi.fn(withReview(async () => planned(items), opts));
     vi.stubGlobal('fetch', fetch);
     await new MarketingWorker(db).tick();
     return { job: (await db.query('SELECT * FROM generation_jobs WHERE id=$1', [quote.id]))[0], fetch };
   }
   beforeAll(async () => {
-    await saveGuide('dotori', guide({ bannedPhrases: ['최고의 앱'], hashtags: { fixed: [], max: 3 } }));
+    await saveGuide('mellow', guide({ bannedPhrases: ['최고의 앱'], hashtags: { fixed: [], max: 3 } }));
   });
   it('drops guide violations, then picks the best reviewed candidate', async () => {
     const { job } = await run(
@@ -282,7 +282,7 @@ describe('template renderer', () => {
   });
   it('applies to a draft, keeps the source photo, and re-applies without stacking', async () => {
     const image = `data:image/jpeg;base64,${(await photo()).toString('base64')}`;
-    const post = await store.create(WORKSPACE_ID, 'kept', actor, {
+    const post = await store.create(WORKSPACE_ID, 'atticcamera', actor, {
       title: '사진 글',
       caption: '본문',
       brief: '',
@@ -290,7 +290,7 @@ describe('template renderer', () => {
       language: 'ko',
       image,
     });
-    const first = await marketing.applyTemplate(WORKSPACE_ID, 'kept', post.id, actor, {
+    const first = await marketing.applyTemplate(WORKSPACE_ID, 'atticcamera', post.id, actor, {
       revision: post.revision,
       kind: 'photo-headline',
       headline: ['첫 줄'],
@@ -298,7 +298,7 @@ describe('template renderer', () => {
     });
     expect(first.sourceAssetId).toBe(post.assetId);
     expect(first.assetId).not.toBe(post.assetId);
-    const second = await marketing.applyTemplate(WORKSPACE_ID, 'kept', post.id, actor, {
+    const second = await marketing.applyTemplate(WORKSPACE_ID, 'atticcamera', post.id, actor, {
       revision: first.revision,
       kind: 'photo-headline',
       headline: ['다른 줄'],
@@ -306,14 +306,14 @@ describe('template renderer', () => {
     });
     expect(second.sourceAssetId).toBe(post.assetId);
     expect(await db.query('SELECT 1 FROM marketing_assets WHERE id=$1', [first.assetId])).toHaveLength(0);
-    const text = await store.create(WORKSPACE_ID, 'kept', actor, {
+    const text = await store.create(WORKSPACE_ID, 'atticcamera', actor, {
       title: '글',
       caption: '본문',
       brief: '',
       channel: 'threads',
       language: 'ko',
     });
-    const card = await marketing.applyTemplate(WORKSPACE_ID, 'kept', text.id, actor, {
+    const card = await marketing.applyTemplate(WORKSPACE_ID, 'atticcamera', text.id, actor, {
       revision: text.revision,
       kind: 'color-card',
       headline: ['카드'],
@@ -332,7 +332,9 @@ it('keeps product names and slugs out of the shared content code', () => {
     'apps/console/features/settings/GuideEditor.tsx',
     'apps/console/features/content/TemplatePanel.tsx',
   ];
-  const names = currentProductCatalog.flatMap((p) => [p.slug, p.name]).concat(['mellow', 'minimo', 'movy']);
+  const names = currentProductCatalog
+    .flatMap((p) => [p.slug, p.name])
+    .concat(['mellow', 'minimo', 'movy', 'dotori']);
   for (const file of files) {
     const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').toLowerCase();
     for (const n of names) {
