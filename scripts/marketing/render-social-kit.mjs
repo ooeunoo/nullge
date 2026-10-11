@@ -39,20 +39,6 @@ const products = [
     name: { ko: '다락방 카메라', en: 'Attic Camera' },
     tagline: { ko: '한 컷에 남는 그 시절의 색', en: 'The colors of then, in a single shot' },
   },
-  {
-    slug: 'kept',
-    icon: 'kept/apps/mobile/assets/icon.png',
-    color: '#3E5C4E',
-    name: { ko: 'Kept', en: 'Kept' },
-    tagline: { ko: '읽고, 듣고, 기도해요. 조용히.', en: 'Read, listen, pray. Quietly.' },
-  },
-  {
-    slug: 'dotori',
-    icon: 'dotori/design/exports/app-icon.png',
-    color: '#99603C',
-    name: { ko: '두토리', en: 'Dotori' },
-    tagline: { ko: '오늘은, 이만큼이면 충분해', en: 'Today, this much is enough' },
-  },
 ];
 
 const escape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

@@ -125,8 +125,6 @@ svg {
 .product + .product { margin-top: var(--space-md); }
 .productClipit { --product-bg: #ff7959; --product-ink: #242326; --product-accent: #ff7959; }
 .productAttic { --product-bg: #38362f; --product-ink: #f5f0e6; --product-accent: #eaa77e; }
-.productKept { --product-bg: #3e5c4e; --product-ink: #f6f1e8; --product-accent: #9fb3a6; }
-.productDotori { --product-bg: #e8eedf; --product-ink: #342e28; --product-accent: #d9a27a; }
 .page .product:hover { text-decoration: none; border-color: var(--border-strong); }
 .productVisual { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-md); min-height: 390px; padding: var(--space-lg); background: var(--product-bg); color: var(--product-ink); }
 .productIcon { border-radius: var(--radius-lg); }
