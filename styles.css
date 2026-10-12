@@ -1,4 +1,12 @@
 @font-face {
+  font-family: 'Nullge Wordmark';
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url(./assets/nullge-wordmark.woff2) format('woff2');
+}
+
+@font-face {
   font-family: 'Montserrat';
   font-style: normal;
   font-weight: 400 700;
@@ -108,7 +116,7 @@ svg {
 .skip { position: fixed; top: -100px; left: var(--gutter); z-index: 10; background: var(--accent); color: var(--accent-dark); padding: var(--space-sm); }
 .skip:focus { top: var(--space-sm); }
 .header { display: flex; align-items: center; justify-content: space-between; padding-block: var(--space-md); border-bottom: 1px solid var(--border); }
-.wordmark { font-size: 30px; font-weight: 700; letter-spacing: -1.5px; }
+.wordmark { font-family: 'Nullge Wordmark', 'Montserrat', system-ui, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.045em; }
 .wordmark span { color: var(--accent); }
 .header nav { display: flex; gap: var(--space-md); font-size: 14px; color: var(--text-secondary); }
 .page a:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
