@@ -73,3 +73,16 @@ bootstrap은 신규 Movy를 포함한 5개 제품을 누락된 경우에만 등�
 - `currentProductCatalog`가 두 제품을 걸러 bootstrap이 다시 넣지 않는다. 10월 2일 카탈로그 파일은 재현용으로 그대로 둔다.
 - 브랜드 등록·로고 파일(`kept.png`, `dotori.png`)·로그인 화면 문구에서 제거. 현재 제품: ClipIt, mellow, 다락방 카메라.
 - 되돌리려면 카탈로그에 다시 추가한다(삭제된 프로필 이력은 복구되지 않는다).
+
+## 2026-11-04 — VYVO 추가
+
+운영자 요청으로 `~/projects/eun/vyvo`를 분석해 기본 프로필과 로고를 추가했다. 10월 2일과 같은 규칙이다: 저장소 문서에 근거한 초안이며 "프로필 확인 필요" 상태로 시작하고, bootstrap은 없는 제품만 넣고 기존 입력을 덮어쓰지 않는다.
+
+| slug | 이름 | 한 줄 | 근거 문서 | 로고 원본 | 사이트 |
+|---|---|---|---|---|---|
+| `vyvo` | VYVO | 필터 18종으로 일상 사진을 선명한 색으로 남기는 카메라·사진 편집 앱 (출시 전) | README.md, docs/store-metadata.en.json, docs/store-setup.json, apps/web/public/{index,privacy,support} | packages/assets/icon.png | https://vyvo.nullge.com/ |
+
+- 프로필 원본은 `packages/database/src/product-catalog-20261104.ts`이고 `currentProductCatalog`에 합쳤다. API 배포의 predeploy(`scripts/migrate.mjs`: migrate + bootstrap)가 운영 작업공간에 없는 VYVO만 넣는다. 새 마이그레이션은 없다.
+- 로고는 앱 아이콘을 240px PNG로 줄여 `apps/console/public/brands/vyvo.png`에 뒀다. 브랜드 색은 사이트 강조색 `#FF739E`.
+- 확인하지 못해 프로필 "주의"에 적어 둔 것: 아직 출시 전(스토어 링크 없음, 2026-10-21 기준 App Store 제출 준비·Google Play 초안), 가격 US $2.99는 저장소 설정 기록일 뿐 게시 전 스토어 확인 필요, 사이트 연결 중(이 시점 DNS 미해석), 사이트 샘플·앱 화면은 개발 미리보기이고 실기기 성능 미검증, 한국어 문구 없음.
+- 로그인 화면 제품 줄: ClipIt · mellow · 다락캠 · VYVO. 회사 사이트(`index.html`)는 별도 커밋(`e7bb248`)에서 이미 반영했다.

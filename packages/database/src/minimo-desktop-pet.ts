@@ -1,5 +1,6 @@
 import { productCatalog20260925 } from './product-catalog-20260925';
 import { productCatalog20261002 } from './product-catalog-20261002';
+import { productCatalog20261104 } from './product-catalog-20261104';
 import { retiredProductSlugs } from './products-retired-migration';
 import { retiredProductSlugs20261011 } from './products-retired-20261011-migration';
 
@@ -25,6 +26,8 @@ export const minimoDesktopPet = {
  * Bootstrap inserts whichever of these a workspace is missing; existing profiles are never replaced.
  * The dated snapshots and minimoDesktopPet stay for migration replay; retired products are filtered out.
  */
-export const currentProductCatalog = [...productCatalog20260925, ...productCatalog20261002].filter(
-  (p) => !retired.includes(p.slug),
-);
+export const currentProductCatalog = [
+  ...productCatalog20260925,
+  ...productCatalog20261002,
+  ...productCatalog20261104,
+].filter((p) => !retired.includes(p.slug));

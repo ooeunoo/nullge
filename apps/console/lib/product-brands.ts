@@ -24,4 +24,11 @@ export const productBrands: Record<
     source: 'apps/mobile/assets/icon.png',
     analyzed: '2026. 10. 02',
   },
+  vyvo: {
+    logo: '/brands/vyvo.png',
+    category: '비비드 필터 카메라 앱',
+    repository: '~/projects/eun/vyvo',
+    source: 'packages/assets/icon.png',
+    analyzed: '2026. 11. 04',
+  },
 };
