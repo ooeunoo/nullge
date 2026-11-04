@@ -36,7 +36,7 @@ const products = [
     slug: 'atticcamera',
     icon: 'atticcamera/apps/mobile/assets/icon.png',
     color: '#EAA77E',
-    name: { ko: '다락방 카메라', en: 'Attic Camera' },
+    name: { ko: '다락캠', en: 'Darak Cam' },
     tagline: { ko: '한 컷에 남는 그 시절의 색', en: 'The colors of then, in a single shot' },
   },
 ];
