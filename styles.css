@@ -132,6 +132,7 @@ svg {
 .product { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-raised); }
 .product + .product { margin-top: var(--space-md); }
 .productClipit { --product-bg: #ff7959; --product-ink: #242326; --product-accent: #ff7959; }
+.productVyvo { --product-bg: #fff4f7; --product-ink: #1c1a20; --product-accent: #ff739e; }
 .productAttic { --product-bg: #38362f; --product-ink: #f5f0e6; --product-accent: #eaa77e; }
 .page .product:hover { text-decoration: none; border-color: var(--border-strong); }
 .productVisual { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-md); min-height: 390px; padding: var(--space-lg); background: var(--product-bg); color: var(--product-ink); }
