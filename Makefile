@@ -3,46 +3,31 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 RAILWAY_PROJECT := 3c584db8-6a84-4244-851d-0a4911e42674
-SERVICES := web api console worker
+SERVICES := web
 
-.PHONY: help setup doctor dev db verify test typecheck build deploy storage-check credentials-check format format-check
+.PHONY: help setup doctor site verify deploy storage-check credentials-check format format-check
 
 help: ## 명령 목록
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
 
-setup: ## 의존성 설치와 공유 패키지 빌드
+setup: ## 의존성 설치(마케팅 렌더링 스크립트·Prettier)
 	pnpm install --frozen-lockfile
-	pnpm --filter @nullge/contracts build
-	pnpm --filter @nullge/database build
 
 doctor: ## 도구 버전·설정 점검 (파일 변경 없음)
 	@node -e 'const [m]=process.versions.node.split("."); if (+m<22) { console.error("Node 22+ 필요: "+process.version); process.exit(1);} console.log("node "+process.version)'
 	@pnpm --version | sed 's/^/pnpm /'
-	@command -v psql >/dev/null && psql --version || echo "psql 없음: 로컬 DB(pnpm dev:db)와 테스트는 PostgreSQL 16+가 필요"
 	@command -v railway >/dev/null && railway --version || echo "railway CLI 없음: deploy 사용 불가"
 	@python3 scripts/harness-config-check.py
 	@python3 .harness/tools/credentials_check.py --project .
 
-dev: ## 로컬 DB·API·Worker·Console 실행 (127.0.0.1:4310)
-	pnpm dev
+site: ## 회사 사이트 로컬 미리보기 (http://127.0.0.1:8080)
+	pnpm site
 
 format: ## Prettier로 소스 정리
-	pnpm -s prettier --write "apps/**/*.{ts,tsx,mjs,css}" "packages/**/*.ts" "tests/**/*.ts" "scripts/**/*.mjs" "*.{json,mjs}"
+	pnpm -s format
 
 format-check: ## Prettier 형식 검사 (verify에 포함)
-	pnpm -s prettier --check "apps/**/*.{ts,tsx,mjs,css}" "packages/**/*.ts" "tests/**/*.ts" "scripts/**/*.mjs" "*.{json,mjs}"
-
-typecheck: ## 전체 타입 검사
-	pnpm typecheck
-
-db: ## 로컬 PostgreSQL(127.0.0.1:5549, .local/postgres) 시작
-	pnpm dev:db
-
-test: db ## 통합 테스트 (로컬 PostgreSQL을 먼저 띄움)
-	pnpm test
-
-build: ## 모든 워크스페이스 빌드
-	pnpm build
+	pnpm -s format:check
 
 storage-check: ## Git에 들어갈 임시 산출물·빌드 바이너리와 여유 공간 점검
 	python3 .harness/tools/storage_check.py --project .
@@ -50,9 +35,8 @@ storage-check: ## Git에 들어갈 임시 산출물·빌드 바이너리와 여�
 credentials-check: ## 추적 중인 .credentials 파일의 암호화 여부 점검
 	python3 .harness/tools/credentials_check.py --project .
 
-verify: doctor format-check typecheck test build storage-check ## 푸시 전 전체 검증
+verify: doctor format-check storage-check ## 푸시 전 전체 검증
 
-deploy: ## 운영 배포: make deploy SERVICE=api (web|api|console|worker). GitHub 자동 배포는 사용하지 않는다.
-	@if [ -z "$(SERVICE)" ]; then echo "SERVICE를 지정하세요: make deploy SERVICE=api"; exit 2; fi
-	@case " $(SERVICES) " in *" $(SERVICE) "*) ;; *) echo "알 수 없는 서비스: $(SERVICE)"; exit 2;; esac
-	railway up --service $(SERVICE) --detach
+deploy: ## 운영 배포: make deploy SERVICE=web. GitHub 자동 배포는 사용하지 않는다.
+	@if [ "$(SERVICE)" != "web" ]; then echo "배포 대상은 web 하나입니다: make deploy SERVICE=web"; exit 2; fi
+	railway up --service web --detach

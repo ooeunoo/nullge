@@ -6,21 +6,13 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=.env scripts/dev.mjs",
-    "dev:db": "node scripts/local-db.mjs",
-    "db:migrate": "pnpm --filter @nullge/database migrate",
-    "db:seed": "pnpm --filter @nullge/database seed",
-    "build": "pnpm -r build",
-    "typecheck": "pnpm --filter @nullge/contracts build && pnpm --filter @nullge/database build && pnpm -r typecheck",
-    "test": "pnpm --filter @nullge/contracts build && pnpm --filter @nullge/database build && vitest run"
+    "format": "prettier --write \"scripts/**/*.mjs\" \"*.json\" \"apps/site/*.mjs\"",
+    "format:check": "prettier --check \"scripts/**/*.mjs\" \"*.json\" \"apps/site/*.mjs\"",
+    "site": "SITE_DIRECTORY=. node apps/site/server.mjs"
   },
   "devDependencies": {
-    "@nullge/contracts": "workspace:*",
-    "@nullge/database": "workspace:*",
-    "@types/node": "^22.19.0",
+    "@resvg/resvg-js": "2.6.2",
     "prettier": "^3.9.9",
-    "sharp": "0.35.4",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.11"
+    "sharp": "0.35.4"
   }
 }

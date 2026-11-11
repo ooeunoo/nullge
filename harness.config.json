@@ -12,7 +12,7 @@
     "repository": "nullge",
     "pushPerFeature": true
   },
-  "apps": ["web", "server", "worker"],
+  "apps": ["web"],
   "mobile": {
     "applicationId": "com.nullge.nullge",
     "platforms": ["ios", "android"],
@@ -54,7 +54,7 @@
     "environments": ["prod"],
     "productionAutodeploy": false,
     "projectId": "3c584db8-6a84-4244-851d-0a4911e42674",
-    "databaseEngine": "postgres"
+    "databaseEngine": null
   },
   "testing": {
     "claudeWeb": "claude-in-chrome",

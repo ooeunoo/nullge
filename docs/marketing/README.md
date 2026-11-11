@@ -1,5 +1,7 @@
 # Nullge 공통 마케팅 운영 기획
 
+> 2026-11-11: 운영자 요청으로 Nullge Console(console·api·worker·Postgres)을 Railway와 저장소에서 모두 삭제했다. 데이터는 백업하지 않았다. 아래 문서는 기록으로만 남긴다.
+
 작성: 2026-09-25 · 상태: 기반 구현·Railway 배포, Console 도메인·운영 로그인 완료 · 작업명: Nullge Console
 
 Nullge가 만드는 여러 제품의 홍보 콘텐츠를 한곳에서 기획하고, 검토하고, 각 제품의 SNS 계정에 발행하는 것을 목표로 한다. 현재 제품은 ClipIt·mellow·다락방 카메라(다락캠)·VYVO다(2026-10-02에 다락방 카메라·Kept·Dotori를 추가하고 minimo·Movy·desk를 제거, 2026-10-11에 Kept·Dotori를 제거, 2026-11-04에 VYVO를 추가). 실제 SNS 발행은 아직 구현하지 않았다.
