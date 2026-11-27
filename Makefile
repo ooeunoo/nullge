@@ -5,7 +5,7 @@ SHELL := /bin/bash
 RAILWAY_PROJECT := 3c584db8-6a84-4244-851d-0a4911e42674
 SERVICES := web
 
-.PHONY: help setup doctor site verify deploy format format-check
+.PHONY: help setup doctor site verify deploy deploy-server format format-check
 
 help: ## 명령 목록
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -32,3 +32,11 @@ verify: doctor format-check ## 푸시 전 전체 검증
 deploy: ## 운영 배포: make deploy SERVICE=web. GitHub 자동 배포는 사용하지 않는다.
 	@if [ "$(SERVICE)" != "web" ]; then echo "배포 대상은 web 하나입니다: make deploy SERVICE=web"; exit 2; fi
 	railway up --service web --detach
+
+deploy-server: ## 전용 서버(svc-nullge) 배포: 로컬 amd64 빌드 → 전송 → compose up → /health 확인
+	@test -z "$$(git status --porcelain -- index.html styles.css assets apps/site deploy)" || { echo "커밋되지 않은 사이트 변경이 있습니다"; exit 2; }
+	$(eval TAG := $(shell git rev-parse --short=7 HEAD))
+	docker buildx build --platform linux/amd64 -f apps/site/Dockerfile -t ghcr.io/ooeunoo/nullge-web:$(TAG) --load .
+	docker save ghcr.io/ooeunoo/nullge-web:$(TAG) | gzip | ssh nullge-nullge 'gunzip | docker load'
+	scp -q deploy/compose.yml nullge-nullge:/srv/nullge/compose.yml
+	ssh nullge-nullge 'cd /srv/nullge && touch .env && sed -i "/^IMAGE_TAG=/d" .env && echo IMAGE_TAG=$(TAG) >> .env && docker compose up -d && sleep 5 && curl -fsS http://127.0.0.1:3000/health'
