@@ -5,6 +5,5 @@ coverage
 .local
 _site
 pnpm-lock.yaml
-.harness
 docs
 *.md

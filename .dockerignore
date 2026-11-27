@@ -14,10 +14,6 @@ coverage
 docs
 tests
 scripts/marketing
-.harness
-.agents
 .claude
-harness.config.json
-harness.lock.json
 Makefile
 *.md
